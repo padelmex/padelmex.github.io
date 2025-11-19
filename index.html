@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Paddle Mexican Tournament</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Organize and manage Mexican paddle tournaments" />
+    <meta name="author" content="marnikitta" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Paddle Mexican Tournament" />
+    <meta property="og:description" content="Organize and manage Mexican paddle tournaments" />
+    <meta property="og:type" content="website" />
+
+    <link rel="icon" href="assets/favicon.png" />
+    <meta name="theme-color" content="#ffffff" />
+
+    <script type="importmap">
+        {
+          "imports": {
+            "vue": "./lib/vue.esm-browser.prod.js"
+          }
+        }
+    </script>
+
+    <link rel="stylesheet" href="style.css?v=1" />
+    <script type="module" src="app.js?v=1" defer></script>
+
+    <style>
+        /* Critical CSS: Hide app until mounted to avoid flash of unstyled content */
+        #app {
+            visibility: hidden;
+        }
+        #app.mounted {
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+<noscript>
+    <strong>JavaScript is required to run this app.</strong>
+</noscript>
+<div id="app"></div>
+</body>
+</html>

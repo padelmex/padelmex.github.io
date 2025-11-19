@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap');
+
+/* Global Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-text-size-adjust: none;
+}
+
+button, input, select, textarea {
+    font: inherit;
+    background: transparent;
+    border: 0;
+}
+
+input:focus {
+    outline: none;
+}
+
+ol, ul, menu {
+    list-style: none;
+}
+
+button {
+    color: black;
+}
+
+button:hover {
+    cursor: pointer;
+}
+
+input::placeholder {
+    color: var(--light-grey);
+}
+
+/* Root Variables */
+:root {
+    --font-family: "Lato", Sans-Serif;
+    --font-size: 20px;
+    --light-grey: #d1d5db;
+}
+
+/* Global Styles */
+html {
+    height: 100%;
+}
+
+body {
+    font-size: var(--font-size);
+    font-family: var(--font-family), sans-serif;
+    display: flex;
+    align-items: stretch;
+    min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-size: 100%;
+}
+
+/* App Container */
+#app {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+}
+
+/* Page Layout */
+.page {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: 1;
+}
+
+/* Header Styles */
+.header {
+    flex: 1;
+    max-height: 8rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.header h1 {
+    font-size: 2rem;
+    overflow-wrap: anywhere;
+}
+
+.header__menu {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+@media (min-width: 450px) {
+    #app {
+        align-items: center;
+    }
+    .page {
+        width: 100%;
+        max-width: 45rem;
+    }
+}
+
+/* Button Styles */
+.button-with-border {
+    padding: 0.1rem 0.4rem;
+    border: 1px solid var(--light-grey);
+    border-radius: 3px;
+    font-weight: 700;
+    color: black;
+}
+
+.button-with-border:disabled {
+    color: var(--light-grey);
+}

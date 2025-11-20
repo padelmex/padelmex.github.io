@@ -120,4 +120,704 @@ h1, h2, h3, h4, h5, h6 {
 
 .button-with-border:disabled {
     color: var(--light-grey);
+    cursor: not-allowed;
+}
+
+/* Tournament Configuration Styles */
+.config {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.config__section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.config__section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.config__section-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.config__counter {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--light-grey);
+    background: #f3f4f6;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    min-width: 2rem;
+    text-align: center;
+}
+
+/* Radio Group */
+.config__radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.config__radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--light-grey);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.config__radio-label:has(input:checked) {
+    background-color: #f3f4f6;
+    border-color: #000;
+}
+
+.config__radio {
+    width: 1.2rem;
+    height: 1.2rem;
+    cursor: pointer;
+}
+
+.config__radio-text {
+    font-weight: 500;
+}
+
+.config__custom-input {
+    width: 6.5rem;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--light-grey);
+    border-radius: 4px;
+    text-align: center;
+}
+
+.config__custom-input:disabled {
+    background: #f9fafb;
+    color: var(--light-grey);
+}
+
+/* List Styles */
+.config__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.config__list-item {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.config__input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid var(--light-grey);
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.config__input:focus {
+    border-color: #000;
+    outline: 2px solid #f3f4f6;
+}
+
+.config__input--new {
+    border-style: dashed;
+}
+
+.config__remove-btn,
+.config__add-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--light-grey);
+    border-radius: 6px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.config__remove-btn {
+    color: #dc2626;
+    border-color: #fecaca;
+}
+
+.config__remove-btn:hover {
+    background-color: #fee2e2;
+}
+
+.config__add-btn {
+    color: #059669;
+    border-color: #a7f3d0;
+}
+
+.config__add-btn:hover {
+    background-color: #d1fae5;
+}
+
+/* Checkbox */
+.config__checkbox-label {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--light-grey);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.config__checkbox-label:has(input:checked) {
+    background-color: #f3f4f6;
+}
+
+.config__checkbox {
+    width: 1.5rem;
+    height: 1.5rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.config__checkbox-text {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.config__checkbox-text small {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+/* Player Info */
+.config__player-info {
+    padding: 0.75rem;
+    background: #f3f4f6;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.config__player-info--warning {
+    display: block;
+    color: #d97706;
+    font-weight: 500;
+    margin-top: 0.25rem;
+}
+
+/* Debug Section */
+.config__debug-section {
+    background: #fffbeb;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 2px dashed #fbbf24;
+}
+
+.config__debug-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: #92400e;
+}
+
+.config__debug-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* Info Section */
+.config__info-section {
+    background: #f9fafb;
+    padding: 1.25rem;
+    border-radius: 8px;
+    border: 1px solid var(--light-grey);
+}
+
+.config__info-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #111827;
+}
+
+.config__info-block {
+    margin-bottom: 1.25rem;
+}
+
+.config__info-block:last-child {
+    margin-bottom: 0;
+}
+
+.config__info-subtitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #374151;
+}
+
+.config__info-text {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #4b5563;
+    margin-bottom: 0.5rem;
+}
+
+.config__info-text:last-child {
+    margin-bottom: 0;
+}
+
+.config__info-list {
+    list-style: disc;
+    margin-left: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.config__info-list:last-child {
+    margin-bottom: 0;
+}
+
+.config__info-list li {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #4b5563;
+    margin-bottom: 0.35rem;
+}
+
+.config__info-list li:last-child {
+    margin-bottom: 0;
+}
+
+/* Actions */
+.config__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 1rem;
+}
+
+.config__actions button {
+    width: 100%;
+}
+
+.config__button-hint {
+    padding: 0.75rem;
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+/* Mobile optimizations */
+@media (max-width: 450px) {
+    .config__section-title {
+        font-size: 1.1rem;
+    }
+
+    .config__input {
+        padding: 0.6rem;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+
+    .config__remove-btn,
+    .config__add-btn {
+        width: 2.2rem;
+        height: 2.2rem;
+        font-size: 1.3rem;
+    }
+}
+
+/* Button Variants */
+.button-large {
+    padding: 0.75rem 1.5rem !important;
+    font-size: 1.1rem;
+}
+
+.button-small {
+    padding: 0.3rem 0.6rem !important;
+    font-size: 0.85rem;
+}
+
+.button-primary {
+    background: #000;
+    color: #fff;
+    border: 2px solid #000 !important;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+.button-primary:hover:not(:disabled) {
+    background: #1f2937;
+}
+
+.button-primary:disabled {
+    background: #f3f4f6;
+    color: var(--light-grey);
+    border-color: var(--light-grey) !important;
+    cursor: not-allowed;
+}
+
+.button-danger {
+    background: #dc2626;
+    color: #fff;
+    border: 2px solid #dc2626 !important;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+.button-danger:hover {
+    background: #b91c1c;
+}
+
+.button-danger:disabled {
+    background: #fecaca;
+    border-color: #fecaca !important;
+    color: #f3f4f6;
+    cursor: not-allowed;
+}
+
+/* Link Styles */
+.link-danger {
+    color: #dc2626;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.link-danger:hover {
+    border-bottom-color: #dc2626;
+}
+
+/* Tournament Page */
+.tournament-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tournament-page__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.tournament-page__header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* Rounds Container */
+.rounds-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Round */
+.round {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.round--complete {
+    color: #9ca3af;
+}
+
+.round--complete .round__title {
+    color: #9ca3af;
+}
+
+.round--complete .game__court,
+.round--complete .game__players,
+.round--complete .game__vs {
+    color: #9ca3af;
+}
+
+.round__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.round__title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.round__games {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.round__bench {
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    background: #f9fafb;
+    border-radius: 4px;
+}
+
+.round__bench-label {
+    font-weight: 600;
+    color: #9ca3af;
+    margin-right: 0.5rem;
+}
+
+.round__bench-players {
+    color: #6b7280;
+}
+
+/* Game */
+.game {
+    background: #f9fafb;
+    padding: 1rem;
+    border-radius: 6px;
+}
+
+.game__court {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+    text-align: center;
+}
+
+.game__teams {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.game__team {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.game__team--1 {
+    flex-direction: row;
+}
+
+.game__team--2 {
+    flex-direction: row-reverse;
+}
+
+.game__players {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.95rem;
+    line-height: 1.3;
+}
+
+.game__team--1 .game__players {
+    align-items: flex-start;
+}
+
+.game__team--2 .game__players {
+    align-items: flex-end;
+}
+
+.game__players span {
+    font-weight: 500;
+}
+
+.game__score {
+    width: 3.5rem;
+    height: 3.5rem;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border: 2px solid var(--light-grey);
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.game__score:focus {
+    border-color: #000;
+    outline: 2px solid #f3f4f6;
+}
+
+.game__score--winning {
+    border-color: #000;
+    font-weight: 900;
+}
+
+.game__score--error {
+    background: #fee2e2;
+    border-color: #dc2626;
+    color: #991b1b;
+}
+
+.game__score:disabled {
+    background: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
+    border-color: #e5e7eb;
+}
+
+.game__vs {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.game__error {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Tournament Actions */
+.tournament-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.tournament-actions button {
+    width: 100%;
+}
+
+/* Leaderboard */
+.leaderboard {
+    background: #fff;
+    border-radius: 8px;
+    border: 2px solid #000;
+    padding: 1.5rem;
+}
+
+.leaderboard__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.leaderboard__header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.leaderboard__table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leaderboard__table thead {
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.leaderboard__table th {
+    padding: 1rem 0.5rem;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.leaderboard__table th:first-child {
+    text-align: center;
+    width: 3rem;
+}
+
+.leaderboard__table tbody tr {
+    border-bottom: none;
+}
+
+.leaderboard__table td {
+    padding: 1rem 0.5rem;
+    font-size: 1rem;
+}
+
+.leaderboard__table td:first-child {
+    text-align: center;
+    font-weight: 700;
+    color: #6b7280;
+}
+
+.leaderboard__name {
+    font-weight: 600;
+}
+
+.leaderboard__points {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #000;
+}
+
+/* Mobile optimizations */
+@media (max-width: 450px) {
+    .tournament-page__header h1 {
+        font-size: 1.5rem;
+    }
+
+    .button-small {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem !important;
+    }
+
+    .game__score {
+        width: 3rem;
+        height: 3rem;
+        font-size: 1.3rem;
+    }
+
+    .game__players {
+        font-size: 0.85rem;
+    }
+
+    .leaderboard {
+        padding: 1rem;
+    }
+
+    .leaderboard__header h2 {
+        font-size: 1.3rem;
+    }
+
+    .leaderboard__table th,
+    .leaderboard__table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    .leaderboard__points {
+        font-size: 1rem;
+    }
 }

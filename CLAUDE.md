@@ -174,6 +174,32 @@ mounted() {
 }
 ```
 
+### Design Guidelines
+
+#### Component and Style Reuse
+
+- **Reuse existing components**: Before creating a new component, check if an existing component can be adapted or extended
+- **Reuse existing styles**: Look for similar styling patterns in the codebase before adding new CSS classes
+- **Refactor when introducing new styles**: When adding a new CSS class, identify recurring patterns in the codebase and refactor old code to use common styles
+- **Create utility classes**: For commonly repeated patterns (spacing, colors, typography), create reusable utility classes
+
+**Example - Before refactoring:**
+```css
+.button-primary { padding: 12px 24px; border-radius: 8px; }
+.button-secondary { padding: 12px 24px; border-radius: 8px; }
+.card { padding: 12px 24px; border-radius: 8px; }
+```
+
+**After refactoring:**
+```css
+.padding-standard { padding: 12px 24px; }
+.rounded-standard { border-radius: 8px; }
+.button-primary { /* extends: padding-standard rounded-standard */ }
+.button-secondary { /* extends: padding-standard rounded-standard */ }
+.card { /* extends: padding-standard rounded-standard */ }
+```
+
+
 ### File Naming
 
 - Use snake_case for component files: `my_component.js`
@@ -184,7 +210,7 @@ mounted() {
 
 - Include proper meta tags for PWA
 - Use importmap for module resolution
-- Add version query strings to bust cache: `style.css?v=1`
+- Add version query strings to bust cache: `style.css?v=20251119204632
 - Include critical CSS inline to prevent FOUC
 - Add noscript fallback
 
@@ -280,6 +306,102 @@ window.history.pushState({view: 'name'}, "", `#${name}`)
 6. **User Privacy**: Never send data to external servers
 7. **Progressive Enhancement**: Core functionality works without JS where possible
 8. **Semantic HTML**: Use proper HTML5 elements
+
+## Debugging with Chrome MCP
+
+Chrome MCP (Model Context Protocol) provides powerful browser automation and debugging capabilities through Chrome DevTools integration.
+
+### When to Use Chrome MCP
+
+Use Chrome MCP for debugging when:
+- **User reports unexpected behavior**: "Button doesn't work", "Page doesn't load", etc.
+- **Navigation issues**: Routes not working, pages not switching
+- **State management problems**: Data not persisting, views not updating
+- **JavaScript errors**: Need to check console for errors
+- **UI/UX verification**: Confirming visual elements render correctly
+- **Integration testing**: Testing full user workflows end-to-end
+
+### Chrome MCP Workflow
+
+1. **Start Local Server** (required for ES modules):
+   ```bash
+   python3 -m http.server 8000
+   ```
+   Never use `file://` protocol - ES modules require HTTP/HTTPS
+
+2. **Navigate to App**:
+   - Use clean URLs without hashes (for state-based navigation)
+   - Example: `http://localhost:8000/` or `http://localhost:8000/index.html`
+
+3. **Take Snapshots** (prefer over screenshots):
+   - Snapshots show accessibility tree with UIDs for interaction
+   - Faster and more efficient than screenshots
+   - Shows element states (disabled, focused, etc.)
+
+4. **Check Console Messages**:
+   - Always check for JavaScript errors first
+   - CORS errors indicate `file://` protocol usage
+   - Look for 404s, failed imports, or runtime errors
+
+5. **Interact with Elements**:
+   - Use UIDs from snapshots to click, fill, or interact
+   - Test user workflows: fill forms, click buttons, navigate
+   - Verify state changes after interactions
+
+6. **Verify State**:
+   - Use `evaluate_script` to check localStorage, store state, or DOM
+   - Confirm data persistence across page reloads
+   - Check that reactive state updates correctly
+
+### Common Debugging Patterns
+
+**Check for CORS Issues:**
+```javascript
+// If you see: "Cross origin requests are only supported for protocol schemes: http, https..."
+// Solution: Start HTTP server, don't use file:// protocol
+```
+
+**Verify Navigation:**
+```javascript
+// Check current view state
+evaluate_script: () => {
+  return {
+    currentView: store.state.currentView,
+    url: window.location.href,
+    hasLocalStorage: !!localStorage.getItem('tournament-data')
+  };
+}
+```
+
+**Debug Button States:**
+```javascript
+// Take snapshot to see if button is disabled and why
+// Look for disabled attribute and nearby error messages
+```
+
+**Test Full Workflow:**
+1. Take snapshot of initial state
+2. Fill form fields using UIDs
+3. Click submit button
+4. Take snapshot to verify new state
+5. Reload page to test persistence
+6. Verify state restored correctly
+
+### Best Practices
+
+- **Always start with console errors**: Check `list_console_messages` first
+- **Use snapshots over screenshots**: More efficient and actionable
+- **Test on clean state**: Clear localStorage when testing from scratch
+- **Verify persistence**: Always test page reloads to ensure data persists
+- **Test edge cases**: Empty states, validation, error handling
+- **Follow user paths**: Test the actual user workflow, not just individual functions
+
+### Limitations
+
+- Cannot test on mobile devices directly (desktop Chrome only)
+- Requires running local server for ES modules
+- Async operations may need wait time
+- Dialogs (alert, confirm, prompt) require special handling with `handle_dialog`
 
 ## Common Patterns
 

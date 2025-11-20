@@ -152,9 +152,6 @@ export default {
               <button @click="fillDummyData" class="button-with-border">
                 Fill Dummy Data
               </button>
-              <button @click="fillGameData" class="button-with-border">
-                Fill Game Data
-              </button>
               <button @click="runUnitTests" class="button-primary button-small">
                 Run Unit Tests
               </button>
@@ -364,26 +361,6 @@ export default {
             ];
             this.pointsPerMatch = 16;
             this.randomize = false;
-        },
-        fillGameData() {
-            this.players = [
-                'Player 1',
-                'Player 2',
-                'Player 3',
-                'Player 4',
-                'Player 5',
-                'Player 6',
-                'Player 7',
-                'Player 8',
-                'Player 9',
-                'Player 10'
-            ];
-            this.courts = [
-                'Court A',
-                'Court B'
-            ];
-            this.pointsPerMatch = 16;
-            this.randomize = true;
         },
         async runUnitTests() {
             try {

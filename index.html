@@ -31,8 +31,8 @@
         }
     </script>
 
-    <link rel="stylesheet" href="style.css?v=20251120103327" />
-    <script type="module" src="app.js?v=20251120103327" defer></script>
+    <link rel="stylesheet" href="style.css?v=20251120105928" />
+    <script type="module" src="app.js?v=20251120105928" defer></script>
 
     <style>
         /* Critical CSS: Hide app until mounted to avoid flash of unstyled content */
@@ -50,19 +50,40 @@
 </noscript>
 <div id="app"></div>
 
-<script>
-    // Register service worker for offline support
+<script type="module">
+    import { config } from './config.js';
+
+    // Register service worker for offline support (only if caching is enabled)
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then((registration) => {
-                    console.log('Service Worker registered successfully:', registration.scope);
-                    // Check for updates periodically
-                    registration.update();
-                })
-                .catch((error) => {
-                    console.log('Service Worker registration failed:', error);
-                });
+        window.addEventListener('load', async () => {
+            if (config.ENABLE_CACHE) {
+                // Register service worker
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                        // Check for updates periodically
+                        registration.update();
+                    })
+                    .catch((error) => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            } else {
+                console.log('Service Worker disabled (ENABLE_CACHE = false)');
+
+                // Unregister any existing service workers
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const registration of registrations) {
+                    await registration.unregister();
+                    console.log('Unregistered existing Service Worker');
+                }
+
+                // Clear all caches
+                const cacheNames = await caches.keys();
+                for (const cacheName of cacheNames) {
+                    await caches.delete(cacheName);
+                    console.log('Cleared cache:', cacheName);
+                }
+            }
         });
     }
 </script>

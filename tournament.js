@@ -119,7 +119,6 @@ export class Tournament {
 
         // Calculate seed for deterministic behavior
         this.seed = this.calculateSeed();
-        this.rng = new SeededRandom(this.seed);
 
         // Create bench rotation order for round-robin benching
         this.benchRotation = [...this.players];
@@ -298,14 +297,6 @@ export class Tournament {
             game.score1 !== null &&
             game.score2 !== null
         );
-    }
-
-    /**
-     * Check if the last round is complete
-     */
-    isLastRoundComplete() {
-        if (this.rounds.length === 0) return false;
-        return this.isRoundComplete(this.rounds.length - 1);
     }
 
     /**

@@ -149,17 +149,6 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
 }
 
-.config__counter {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--light-grey);
-    background: #f3f4f6;
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-    min-width: 2rem;
-    text-align: center;
-}
-
 /* Radio Group */
 .config__radio-group {
     display: flex;

@@ -166,26 +166,6 @@ export function runTournamentTests() {
         );
     });
 
-    // Test 5: Round completion check
-    runner.test('Round completion check works', () => {
-        const tournament = new Tournament({
-            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry'],
-            courts: ['Court 1', 'Court 2'],
-            pointsPerMatch: 16,
-            randomize: false
-        });
-
-        runner.assertFalse(tournament.isLastRoundComplete(), 'Round should not be complete initially');
-
-        // Complete first game
-        tournament.updateScore(0, 0, 10, 6);
-        runner.assertFalse(tournament.isLastRoundComplete(), 'Round should not be complete with only 1 game');
-
-        // Complete second game
-        tournament.updateScore(0, 1, 8, 8);
-        runner.assertTrue(tournament.isLastRoundComplete(), 'Round should be complete');
-    });
-
     // Test 6: Create next round
     runner.test('Can create next round after completion', () => {
         const tournament = new Tournament({

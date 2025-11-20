@@ -199,6 +199,22 @@ mounted() {
 .card { /* extends: padding-standard rounded-standard */ }
 ```
 
+#### Code Cleanup and Removal
+
+- **Remove unused code**: When removing features or refactoring, always clean up associated code
+- **Delete unused CSS classes**: Remove CSS rules that are no longer referenced in any component
+- **Remove unused components**: Delete component files that are no longer imported or used
+- **Clean up unused imports**: Remove import statements for components or modules that are no longer needed
+- **Delete unused assets**: Remove images, icons, or other assets that are no longer referenced
+- **Keep it minimal**: A smaller, cleaner codebase is easier to maintain and understand
+
+**When making changes:**
+1. Remove the feature from the template/HTML
+2. Remove associated CSS classes
+3. Remove any JavaScript functions or data related to the feature
+4. Remove unused imports
+5. Verify no other parts of the codebase reference the removed code
+
 
 ### File Naming
 

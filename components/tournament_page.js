@@ -321,10 +321,6 @@ export default {
             }
         },
 
-        isRoundComplete(roundIndex) {
-            return this.tournament.isRoundComplete(roundIndex);
-        },
-
         getBenchPlayers(roundIndex) {
             return this.tournament.getBenchPlayers(roundIndex);
         },

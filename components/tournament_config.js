@@ -1,4 +1,5 @@
 import {store} from "../store.js";
+import {config} from "../config.js";
 
 export default {
     template: `
@@ -62,7 +63,6 @@ export default {
           <section class="config__section">
             <div class="config__section-header">
               <h2 class="config__section-title">Player Names</h2>
-              <span class="config__counter">{{ players.length }}</span>
             </div>
             <div class="config__list">
               <div v-for="(player, index) in players" :key="index" class="config__list-item">
@@ -96,7 +96,6 @@ export default {
           <section class="config__section">
             <div class="config__section-header">
               <h2 class="config__section-title">Court Names</h2>
-              <span class="config__counter">{{ courts.length }}</span>
             </div>
             <div class="config__list">
               <div v-for="(court, index) in courts" :key="index" class="config__list-item">
@@ -170,7 +169,7 @@ export default {
           </section>
 
           <!-- Debug Buttons -->
-          <section class="config__section config__debug-section">
+          <section v-if="showDebugMenu" class="config__section config__debug-section">
             <h3 class="config__debug-title">Debug Tools</h3>
             <div class="config__debug-buttons">
               <button @click="fillDummyData" class="button-with-border">
@@ -281,6 +280,9 @@ export default {
         };
     },
     computed: {
+        showDebugMenu() {
+            return config.SHOW_DEBUG_MENU;
+        },
         playingCount() {
             return Math.min(this.players.length, this.courts.length * 4);
         },

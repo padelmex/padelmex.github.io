@@ -12,4 +12,11 @@ export const config = {
      * @type {boolean}
      */
     ENABLE_CACHE: false,
+
+    /**
+     * Show or hide debug menu in tournament configuration
+     * Set to false in production to hide debug tools
+     * @type {boolean}
+     */
+    SHOW_DEBUG_MENU: false,
 };

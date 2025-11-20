@@ -390,22 +390,23 @@ export default {
         },
         fillDummyData() {
             this.players = [
-                'Alice',
-                'Bob',
-                'Charlie',
-                'Dave',
-                'Eve',
-                'Frank',
-                'Grace',
-                'Henry'
+                'Nikita',
+                'Slava',
+                'Sasha',
+                'Pasha',
+                'Artem',
+                'Nikolay',
+                'Stephen',
+                'Sergei',
+                'Sanjar'
             ];
             this.courts = [
-                'Court 1',
-                'Court 2'
+                'First court',
+                'Second court'
             ];
             this.pointsPerMatch = 16;
-            this.randomize = false;
-            this.benchingMode = 'round-robin';
+            this.randomize = true;
+            this.benchingMode = 'random';
         }
     }
 };

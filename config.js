@@ -18,5 +18,5 @@ export const config = {
      * Set to false in production to hide debug tools
      * @type {boolean}
      */
-    SHOW_DEBUG_MENU: false,
+    SHOW_DEBUG_MENU: true,
 };

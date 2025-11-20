@@ -298,11 +298,6 @@ export function runTournamentTests() {
             JSON.stringify(restored.rounds),
             'Rounds should be identical after restoration'
         );
-        runner.assertEqual(
-            JSON.stringify(tournament.playerStats),
-            JSON.stringify(restored.playerStats),
-            'Player stats should be identical after restoration'
-        );
     });
 
     // Test 11: Multiple courts

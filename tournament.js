@@ -129,16 +129,6 @@ export class Tournament {
          */
         this.rounds = [];
 
-        // Track player statistics for fair rotation
-        this.playerStats = {};
-        this.players.forEach(player => {
-            this.playerStats[player] = {
-                gamesPlayed: 0,
-                lastPlayedRound: -1,
-                roundsSatOut: 0
-            };
-        });
-
         // Create first round
         this.createNextRound();
     }
@@ -228,13 +218,6 @@ export class Tournament {
             return sortedPlayers.indexOf(a) - sortedPlayers.indexOf(b);
         });
 
-        // Update stats for sitting players
-        this.players.forEach(player => {
-            if (!activePlayers.includes(player)) {
-                this.playerStats[player].roundsSatOut++;
-            }
-        });
-
         // Apply randomization if enabled
         let pairedPlayers;
         if (this.randomize && currentRound > 0) {
@@ -260,13 +243,6 @@ export class Tournament {
                     score2: null
                 };
                 games.push(game);
-
-                // Update player stats
-                courtPlayers.forEach(player => {
-                    this.playerStats[player].gamesPlayed++;
-                    this.playerStats[player].lastPlayedRound = currentRound;
-                    this.playerStats[player].roundsSatOut = 0;
-                });
             }
         }
 
@@ -357,42 +333,6 @@ export class Tournament {
         if (this.rounds.length === 0) {
             throw new Error('No rounds to undo');
         }
-
-        const lastRound = this.rounds[this.rounds.length - 1];
-
-        // Revert player stats
-        lastRound.games.forEach(game => {
-            [...game.team1, ...game.team2].forEach(player => {
-                this.playerStats[player].gamesPlayed--;
-
-                // Find last played round before this one
-                let lastPlayed = -1;
-                for (let i = this.rounds.length - 2; i >= 0; i--) {
-                    const round = this.rounds[i];
-                    const playedInRound = round.games.some(g =>
-                        [...g.team1, ...g.team2].includes(player)
-                    );
-                    if (playedInRound) {
-                        lastPlayed = i;
-                        break;
-                    }
-                }
-                this.playerStats[player].lastPlayedRound = lastPlayed;
-            });
-        });
-
-        // Recalculate roundsSatOut for all players
-        this.players.forEach(player => {
-            let satOut = 0;
-            for (let i = this.rounds.length - 2; i >= 0; i--) {
-                const playedInRound = this.rounds[i].games.some(g =>
-                    [...g.team1, ...g.team2].includes(player)
-                );
-                if (playedInRound) break;
-                satOut++;
-            }
-            this.playerStats[player].roundsSatOut = satOut;
-        });
 
         // Remove the last round
         this.rounds.pop();
@@ -493,8 +433,7 @@ export class Tournament {
             randomize: this.randomize,
             benchingMode: this.benchingMode,
             benchRotation: this.benchRotation,
-            rounds: this.rounds,
-            playerStats: this.playerStats
+            rounds: this.rounds
         };
     }
 
@@ -513,9 +452,8 @@ export class Tournament {
         // Clear the auto-generated first round
         tournament.rounds = [];
 
-        // Restore rounds, player stats, and bench rotation
+        // Restore rounds and bench rotation
         tournament.rounds = data.rounds;
-        tournament.playerStats = data.playerStats;
 
         // Restore benchRotation if available (for backward compatibility)
         if (data.benchRotation) {

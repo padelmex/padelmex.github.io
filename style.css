@@ -92,12 +92,6 @@ h1, h2, h3, h4, h5, h6 {
     overflow-wrap: anywhere;
 }
 
-.header__menu {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-end;
-    gap: 0.5rem;
-}
 
 @media (min-width: 450px) {
     #app {
@@ -262,8 +256,7 @@ h1, h2, h3, h4, h5, h6 {
     border-style: dashed;
 }
 
-.config__remove-btn,
-.config__add-btn {
+.config__remove-btn {
     width: 2.5rem;
     height: 2.5rem;
     display: flex;
@@ -276,24 +269,12 @@ h1, h2, h3, h4, h5, h6 {
     cursor: pointer;
     transition: all 0.2s;
     flex-shrink: 0;
-}
-
-.config__remove-btn {
     color: #dc2626;
     border-color: #fecaca;
 }
 
 .config__remove-btn:hover {
     background-color: #fee2e2;
-}
-
-.config__add-btn {
-    color: #059669;
-    border-color: #a7f3d0;
-}
-
-.config__add-btn:hover {
-    background-color: #d1fae5;
 }
 
 /* Checkbox */
@@ -326,23 +307,6 @@ h1, h2, h3, h4, h5, h6 {
 .config__checkbox-text small {
     font-size: 0.85rem;
     color: #6b7280;
-}
-
-/* Player Info */
-.config__player-info {
-    padding: 0.75rem;
-    background: #f3f4f6;
-    border-radius: 6px;
-    text-align: center;
-    font-size: 0.95rem;
-    line-height: 1.5;
-}
-
-.config__player-info--warning {
-    display: block;
-    color: #d97706;
-    font-weight: 500;
-    margin-top: 0.25rem;
 }
 
 /* Debug Section */
@@ -479,8 +443,7 @@ h1, h2, h3, h4, h5, h6 {
         font-size: 16px; /* Prevent zoom on iOS */
     }
 
-    .config__remove-btn,
-    .config__add-btn {
+    .config__remove-btn {
         width: 2.2rem;
         height: 2.2rem;
         font-size: 1.3rem;
@@ -514,25 +477,6 @@ h1, h2, h3, h4, h5, h6 {
     background: #f3f4f6;
     color: var(--light-grey);
     border-color: var(--light-grey) !important;
-    cursor: not-allowed;
-}
-
-.button-danger {
-    background: #dc2626;
-    color: #fff;
-    border: 2px solid #dc2626 !important;
-    border-radius: 6px;
-    font-weight: 700;
-}
-
-.button-danger:hover {
-    background: #b91c1c;
-}
-
-.button-danger:disabled {
-    background: #fecaca;
-    border-color: #fecaca !important;
-    color: #f3f4f6;
     cursor: not-allowed;
 }
 
@@ -693,15 +637,6 @@ h1, h2, h3, h4, h5, h6 {
 .game__score:focus {
     border-color: #000;
     outline: 2px solid #f3f4f6;
-}
-
-.game__score--winning {
-    border-color: #000;
-    font-weight: 900;
-}
-
-.game__score--error {
-    /* Error styling removed - error message is shown below input instead */
 }
 
 .game__score--warning {

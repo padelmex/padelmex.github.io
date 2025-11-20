@@ -2,8 +2,8 @@ const CACHE_NAME = 'paddle-mexican-v3';
 const urlsToCache = [
   './',
   './index.html',
-  './style.css?v=20251120105928',
-  './app.js?v=20251120105928',
+  './style.css?v=20251120140131',
+  './app.js?v=20251120140131',
   './store.js',
   './tournament.js',
   './lib/vue.esm-browser.prod.js',

@@ -573,39 +573,43 @@ h1, h2, h3, h4, h5, h6 {
 .game__teams {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: center;
+    gap: 1rem;
 }
 
 .game__team {
-    flex: 1;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
 }
 
 .game__team--1 {
     flex-direction: row;
+    justify-content: flex-end;
 }
 
 .game__team--2 {
-    flex-direction: row-reverse;
+    flex-direction: row;
+    justify-content: flex-start;
 }
 
 .game__players {
-    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
     font-size: 0.95rem;
     line-height: 1.3;
+    min-width: 5rem;
 }
 
 .game__team--1 .game__players {
-    align-items: flex-start;
+    align-items: flex-end;
+    text-align: right;
 }
 
 .game__team--2 .game__players {
-    align-items: flex-end;
+    align-items: flex-start;
+    text-align: left;
 }
 
 .game__players span {

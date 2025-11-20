@@ -356,14 +356,16 @@ export function runTournamentTests() {
             randomize: false
         });
 
-        // Round 1: Alice & Bob vs Charlie & Dave (16-0), Eve & Frank vs Grace & Henry (16-0)
+        // Round 1 with 1-3 vs 2-4 pairing:
+        // Court 1: team1=[Alice, Charlie] vs team2=[Bob, Dave] (16-0)
+        // Court 2: team1=[Eve, Grace] vs team2=[Frank, Henry] (16-0)
         tournament.updateScore(0, 0, 16, 0);
         tournament.updateScore(0, 1, 16, 0);
 
         // Create Round 2
         tournament.createNextRound();
 
-        // After Round 1, rankings are: Alice(16), Bob(16), Eve(16), Frank(16), Charlie(0), Dave(0), Grace(0), Henry(0)
+        // After Round 1, rankings are: Alice(16), Charlie(16), Eve(16), Grace(16), Bob(0), Dave(0), Frank(0), Henry(0)
         // Round 2 should pair: Top 4 players together, Bottom 4 players together
         const round2 = tournament.rounds[1];
         const game1 = round2.games[0];
@@ -371,12 +373,12 @@ export function runTournamentTests() {
 
         // Check Court 1: Top 4 players should play together
         const court1Players = [...game1.team1, ...game1.team2].sort();
-        const expectedCourt1 = ['Alice', 'Bob', 'Eve', 'Frank'].sort();
+        const expectedCourt1 = ['Alice', 'Charlie', 'Eve', 'Grace'].sort();
         runner.assertEqual(court1Players, expectedCourt1, 'Court 1 should have the top 4 players');
 
         // Check Court 2: Bottom 4 players should play together
         const court2Players = [...game2.team1, ...game2.team2].sort();
-        const expectedCourt2 = ['Charlie', 'Dave', 'Grace', 'Henry'].sort();
+        const expectedCourt2 = ['Bob', 'Dave', 'Frank', 'Henry'].sort();
         runner.assertEqual(court2Players, expectedCourt2, 'Court 2 should have the bottom 4 players');
     });
 
@@ -720,6 +722,292 @@ export function runTournamentTests() {
         const satOut = tournament.players.filter(p => !playersInRound1.has(p));
         const satOutPlayingInRound2 = satOut.some(p => playersInRound2.has(p));
         runner.assertTrue(satOutPlayingInRound2, 'Players who sat out in Round 1 should play in Round 2');
+    });
+
+    // ============================================================================
+    // NEW TESTS: 1-3 vs 2-4 Pairing Pattern
+    // ============================================================================
+
+    runner.test('Teams are paired as 1-3 vs 2-4 (not 1-2 vs 3-4)', () => {
+        const tournament = new Tournament({
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        // In Round 1, players are in original order: P1, P2, P3, P4, P5, P6, P7, P8
+        // Court 1 gets first 4: P1, P2, P3, P4
+        // Expected pairing: team1=[P1,P3], team2=[P2,P4]
+        const game1 = tournament.rounds[0].games[0];
+        runner.assertEqual(game1.team1.sort(), ['P1', 'P3'], 'Court 1 Team 1 should be P1 and P3');
+        runner.assertEqual(game1.team2.sort(), ['P2', 'P4'], 'Court 1 Team 2 should be P2 and P4');
+
+        // Court 2 gets next 4: P5, P6, P7, P8
+        // Expected pairing: team1=[P5,P7], team2=[P6,P8]
+        const game2 = tournament.rounds[0].games[1];
+        runner.assertEqual(game2.team1.sort(), ['P5', 'P7'], 'Court 2 Team 1 should be P5 and P7');
+        runner.assertEqual(game2.team2.sort(), ['P6', 'P8'], 'Court 2 Team 2 should be P6 and P8');
+    });
+
+    runner.test('1-3 vs 2-4 pairing applies after leaderboard sorting', () => {
+        const tournament = new Tournament({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        // Round 1: Alice & Charlie win 16-0, Eve & Grace win 16-0
+        tournament.updateScore(0, 0, 16, 0);
+        tournament.updateScore(0, 1, 16, 0);
+
+        // Create Round 2 - players sorted by leaderboard
+        tournament.createNextRound();
+
+        // After Round 1, top 4 are: Alice(16), Charlie(16), Eve(16), Grace(16)
+        // They should be paired 1-3 vs 2-4 based on sorted order
+        const game1 = tournament.rounds[1].games[0];
+        const game1Players = [...game1.team1, ...game1.team2];
+
+        // Verify top 4 players are on Court 1
+        runner.assertTrue(game1Players.includes('Alice'), 'Alice should play on Court 1');
+        runner.assertTrue(game1Players.includes('Charlie'), 'Charlie should play on Court 1');
+        runner.assertTrue(game1Players.includes('Eve'), 'Eve should play on Court 1');
+        runner.assertTrue(game1Players.includes('Grace'), 'Grace should play on Court 1');
+    });
+
+    // ============================================================================
+    // NEW TESTS: Round Robin Benching
+    // ============================================================================
+
+    runner.test('Round robin benching rotates players in fixed order', () => {
+        const tournament = new Tournament({
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false,
+            benchingMode: 'round-robin'
+        });
+
+        // Round 0: Should bench P1, P2 (first 2 in rotation)
+        const round0Players = new Set();
+        tournament.rounds[0].games.forEach(game => {
+            game.team1.forEach(p => round0Players.add(p));
+            game.team2.forEach(p => round0Players.add(p));
+        });
+        runner.assertTrue(!round0Players.has('P1'), 'P1 should be benched in Round 0');
+        runner.assertTrue(!round0Players.has('P2'), 'P2 should be benched in Round 0');
+        runner.assertTrue(round0Players.has('P3'), 'P3 should play in Round 0');
+        runner.assertTrue(round0Players.has('P4'), 'P4 should play in Round 0');
+        runner.assertTrue(round0Players.has('P5'), 'P5 should play in Round 0');
+        runner.assertTrue(round0Players.has('P6'), 'P6 should play in Round 0');
+
+        // Complete Round 0 and create Round 1
+        tournament.updateScore(0, 0, 10, 6);
+        tournament.createNextRound();
+
+        // Round 1: Should bench P3, P4 (next 2 in rotation)
+        const round1Players = new Set();
+        tournament.rounds[1].games.forEach(game => {
+            game.team1.forEach(p => round1Players.add(p));
+            game.team2.forEach(p => round1Players.add(p));
+        });
+        runner.assertTrue(round1Players.has('P1'), 'P1 should play in Round 1');
+        runner.assertTrue(round1Players.has('P2'), 'P2 should play in Round 1');
+        runner.assertTrue(!round1Players.has('P3'), 'P3 should be benched in Round 1');
+        runner.assertTrue(!round1Players.has('P4'), 'P4 should be benched in Round 1');
+        runner.assertTrue(round1Players.has('P5'), 'P5 should play in Round 1');
+        runner.assertTrue(round1Players.has('P6'), 'P6 should play in Round 1');
+
+        // Complete Round 1 and create Round 2
+        tournament.updateScore(1, 0, 10, 6);
+        tournament.createNextRound();
+
+        // Round 2: Should bench P5, P6 (next 2 in rotation)
+        const round2Players = new Set();
+        tournament.rounds[2].games.forEach(game => {
+            game.team1.forEach(p => round2Players.add(p));
+            game.team2.forEach(p => round2Players.add(p));
+        });
+        runner.assertTrue(round2Players.has('P1'), 'P1 should play in Round 2');
+        runner.assertTrue(round2Players.has('P2'), 'P2 should play in Round 2');
+        runner.assertTrue(round2Players.has('P3'), 'P3 should play in Round 2');
+        runner.assertTrue(round2Players.has('P4'), 'P4 should play in Round 2');
+        runner.assertTrue(!round2Players.has('P5'), 'P5 should be benched in Round 2');
+        runner.assertTrue(!round2Players.has('P6'), 'P6 should be benched in Round 2');
+    });
+
+    // ============================================================================
+    // NEW TESTS: Random Benching
+    // ============================================================================
+
+    runner.test('Random benching is deterministic with same seed', () => {
+        const config = {
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false,
+            benchingMode: 'random'
+        };
+
+        const tournament1 = new Tournament(config);
+        const tournament2 = new Tournament(config);
+
+        // Round 0 should have same players
+        const round0Players1 = new Set();
+        tournament1.rounds[0].games.forEach(game => {
+            game.team1.forEach(p => round0Players1.add(p));
+            game.team2.forEach(p => round0Players1.add(p));
+        });
+
+        const round0Players2 = new Set();
+        tournament2.rounds[0].games.forEach(game => {
+            game.team1.forEach(p => round0Players2.add(p));
+            game.team2.forEach(p => round0Players2.add(p));
+        });
+
+        runner.assertEqual(
+            Array.from(round0Players1).sort(),
+            Array.from(round0Players2).sort(),
+            'Random benching should be deterministic with same seed'
+        );
+    });
+
+    runner.test('Random benching changes which players are benched each round', () => {
+        const tournament = new Tournament({
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false,
+            benchingMode: 'random'
+        });
+
+        // Get benched players for multiple rounds
+        const benchedPerRound = [];
+        for (let i = 0; i < 3; i++) {
+            const roundPlayers = new Set();
+            tournament.rounds[i].games.forEach(game => {
+                game.team1.forEach(p => roundPlayers.add(p));
+                game.team2.forEach(p => roundPlayers.add(p));
+            });
+            const benched = tournament.players.filter(p => !roundPlayers.has(p));
+            benchedPerRound.push(benched.sort().join(','));
+
+            if (i < 2) {
+                tournament.updateScore(i, 0, 10, 6);
+                tournament.createNextRound();
+            }
+        }
+
+        // At least one round should have different benched players
+        // (very unlikely all 3 rounds bench the same 2 players)
+        const uniqueBenched = new Set(benchedPerRound);
+        runner.assertTrue(
+            uniqueBenched.size >= 2,
+            'Random benching should vary which players are benched (got: ' + Array.from(uniqueBenched).join('; ') + ')'
+        );
+    });
+
+    // ============================================================================
+    // NEW TESTS: Deterministic Recreation
+    // ============================================================================
+
+    runner.test('Removing and recreating round produces identical result (round robin)', () => {
+        const config = {
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false,
+            benchingMode: 'round-robin'
+        };
+
+        const tournament = new Tournament(config);
+
+        // Complete Round 0
+        tournament.updateScore(0, 0, 10, 6);
+
+        // Create Round 1
+        tournament.createNextRound();
+        const round1Original = JSON.parse(JSON.stringify(tournament.rounds[1]));
+
+        // Undo Round 1
+        tournament.undoLastRound();
+
+        // Recreate Round 1
+        tournament.createNextRound();
+        const round1Recreated = JSON.parse(JSON.stringify(tournament.rounds[1]));
+
+        runner.assertEqual(
+            round1Original,
+            round1Recreated,
+            'Recreated round should be identical to original'
+        );
+    });
+
+    runner.test('Removing and recreating round produces identical result (random)', () => {
+        const config = {
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false,
+            benchingMode: 'random'
+        };
+
+        const tournament = new Tournament(config);
+
+        // Complete Round 0
+        tournament.updateScore(0, 0, 10, 6);
+
+        // Create Round 1
+        tournament.createNextRound();
+        const round1Original = JSON.parse(JSON.stringify(tournament.rounds[1]));
+
+        // Undo Round 1
+        tournament.undoLastRound();
+
+        // Recreate Round 1
+        tournament.createNextRound();
+        const round1Recreated = JSON.parse(JSON.stringify(tournament.rounds[1]));
+
+        runner.assertEqual(
+            round1Original,
+            round1Recreated,
+            'Recreated round should be identical to original (random benching)'
+        );
+    });
+
+    runner.test('Deterministic recreation with randomized pairing', () => {
+        const config = {
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: true,
+            benchingMode: 'random'
+        };
+
+        const tournament = new Tournament(config);
+
+        // Complete Round 0
+        tournament.updateScore(0, 0, 16, 0);
+        tournament.updateScore(0, 1, 16, 0);
+
+        // Create Round 1
+        tournament.createNextRound();
+        const round1Original = JSON.parse(JSON.stringify(tournament.rounds[1]));
+
+        // Undo Round 1
+        tournament.undoLastRound();
+
+        // Recreate Round 1
+        tournament.createNextRound();
+        const round1Recreated = JSON.parse(JSON.stringify(tournament.rounds[1]));
+
+        runner.assertEqual(
+            round1Original,
+            round1Recreated,
+            'Recreated round should be identical with both random benching and pairing'
+        );
     });
 
     return runner;

@@ -1,5 +1,4 @@
 import {store} from "../store.js";
-import {runTournamentTests} from "../tournament.test.js";
 
 export default {
     template: `
@@ -39,6 +38,7 @@ export default {
                   name="points"
                   :value="0"
                   v-model.number="pointsPerMatch"
+                  @change="focusCustomInput"
                   class="config__radio"
                 >
                 <span class="config__radio-text">Custom:</span>
@@ -51,6 +51,8 @@ export default {
                   max="100"
                   class="config__custom-input"
                   placeholder="Enter"
+                  inputmode="numeric"
+                  ref="customPointsInput"
                 >
               </label>
             </div>
@@ -80,10 +82,13 @@ export default {
                   class="config__input config__input--new"
                   placeholder="Add player..."
                   @keydown.enter.prevent="addPlayer"
+                  @blur="addPlayer"
                   ref="playerInput"
                 >
-                <button @click="addPlayer" class="config__add-btn">+</button>
               </div>
+            </div>
+            <div class="section-note">
+              Note: You can add more players than available seats.
             </div>
           </section>
 
@@ -111,8 +116,8 @@ export default {
                   class="config__input config__input--new"
                   placeholder="Add court..."
                   @keydown.enter.prevent="addCourt"
+                  @blur="addCourt"
                 >
-                <button @click="addCourt" class="config__add-btn">+</button>
               </div>
             </div>
           </section>
@@ -132,16 +137,35 @@ export default {
             </label>
           </section>
 
-          <!-- Summary -->
-          <section class="config__section" v-if="players.length > 0 && courts.length > 0 && playingCount > 0">
-            <div v-if="waitingCount > 0" class="config__player-info">
-              {{ playingCount }} player{{ playingCount !== 1 ? 's' : '' }} will play at the same time and {{ waitingCount }} will need to wait.
-              <span v-if="waitingCount > playingCount" class="config__player-info--warning">
-                Consider adding more courts.
-              </span>
+          <!-- Benching Mode -->
+          <section class="config__section">
+            <h2 class="config__section-title">Benching Mode</h2>
+            <div class="config__radio-group">
+              <label class="config__radio-label">
+                <input
+                  type="radio"
+                  name="benching"
+                  value="round-robin"
+                  v-model="benchingMode"
+                  class="config__radio"
+                  :disabled="waitingCount === 0"
+                >
+                <span class="config__radio-text">Round Robin - Players bench in fixed rotation order</span>
+              </label>
+              <label class="config__radio-label">
+                <input
+                  type="radio"
+                  name="benching"
+                  value="random"
+                  v-model="benchingMode"
+                  class="config__radio"
+                  :disabled="waitingCount === 0"
+                >
+                <span class="config__radio-text">Random - Players selected randomly each round</span>
+              </label>
             </div>
-            <div v-else class="config__player-info">
-              All {{ playingCount }} player{{ playingCount !== 1 ? 's' : '' }} will play at the same time.
+            <div v-if="waitingCount === 0" class="section-note">
+              Benching mode is only needed when there are more players than seats.
             </div>
           </section>
 
@@ -151,9 +175,6 @@ export default {
             <div class="config__debug-buttons">
               <button @click="fillDummyData" class="button-with-border">
                 Fill Dummy Data
-              </button>
-              <button @click="runUnitTests" class="button-primary button-small">
-                Run Unit Tests
               </button>
             </div>
           </section>
@@ -169,6 +190,17 @@ export default {
             </button>
             <div v-if="validationError" class="config__button-hint">
               {{ validationError }}
+            </div>
+            <div v-if="!validationError && players.length > 0 && courts.length > 0 && playingCount > 0">
+              <div v-if="waitingCount > 0" class="config__button-info">
+                {{ playingCount }} player{{ playingCount !== 1 ? 's' : '' }} will play at the same time and {{ waitingCount }} will need to wait.
+                <span v-if="waitingCount > playingCount" class="config__button-info--warning">
+                  Consider adding more courts.
+                </span>
+              </div>
+              <div v-else class="config__button-info">
+                All {{ playingCount }} player{{ playingCount !== 1 ? 's' : '' }} will play at the same time.
+              </div>
             </div>
           </div>
 
@@ -245,6 +277,7 @@ export default {
             courts: [],
             newCourt: "",
             randomize: false,
+            benchingMode: 'round-robin',
         };
     },
     computed: {
@@ -299,6 +332,13 @@ export default {
                 this.pointsPerMatch = 0;
             }
         },
+        focusCustomInput() {
+            this.$nextTick(() => {
+                if (this.$refs.customPointsInput) {
+                    this.$refs.customPointsInput.focus();
+                }
+            });
+        },
         addPlayer() {
             if (this.newPlayer.trim()) {
                 this.players.push(this.newPlayer.trim());
@@ -330,6 +370,7 @@ export default {
                 players: [...this.players],
                 courts: [...this.courts],
                 randomize: this.randomize,
+                benchingMode: this.benchingMode,
             });
 
             store.createTournament();
@@ -340,6 +381,7 @@ export default {
                 players: this.players,
                 courts: this.courts,
                 randomize: this.randomize,
+                benchingMode: this.benchingMode,
             }));
 
             // View change is handled by store.createTournament() above
@@ -361,42 +403,7 @@ export default {
             ];
             this.pointsPerMatch = 16;
             this.randomize = false;
-        },
-        async runUnitTests() {
-            try {
-                const runner = runTournamentTests();
-                const results = await runner.run();
-                const summary = runner.getSummary();
-
-                const failedTests = results.filter(r => !r.passed);
-
-                if (failedTests.length === 0) {
-                    alert(
-                        `✅ All tests passed!\n\n` +
-                        `Total: ${summary.total}\n` +
-                        `Passed: ${summary.passed}\n` +
-                        `Failed: ${summary.failed}`
-                    );
-                } else {
-                    const errorDetails = failedTests.map(test =>
-                        `❌ ${test.name}\n   ${test.error}`
-                    ).join('\n\n');
-
-                    alert(
-                        `❌ Some tests failed!\n\n` +
-                        `Total: ${summary.total}\n` +
-                        `Passed: ${summary.passed}\n` +
-                        `Failed: ${summary.failed}\n\n` +
-                        `Failed tests:\n\n${errorDetails}`
-                    );
-                }
-
-                console.log('Test Results:', results);
-                console.log('Test Summary:', summary);
-            } catch (error) {
-                alert(`Error running tests:\n\n${error.message}\n\nCheck console for details.`);
-                console.error('Test error:', error);
-            }
+            this.benchingMode = 'round-robin';
         }
     }
 };

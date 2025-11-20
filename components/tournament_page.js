@@ -42,7 +42,7 @@ export default {
                 </table>
             </div>
 
-            <div v-else class="rounds-container">
+            <div v-else-if="tournament" class="rounds-container">
                 <div
                     v-for="(round, roundIndex) in tournament.rounds"
                     :key="roundIndex"
@@ -77,15 +77,13 @@ export default {
                                     <input
                                         type="number"
                                         class="game__score"
-                                        :class="{
-                                            'game__score--error': getScoreError(roundIndex, gameIndex)
-                                        }"
                                         v-model.number="game.score1"
-                                        @input="onScoreChange(roundIndex, gameIndex)"
+                                        @blur="onScore1Change(roundIndex, gameIndex)"
+                                        @input="onScoreInput(roundIndex, gameIndex)"
                                         :disabled="isRoundFrozen(roundIndex)"
                                         min="0"
-                                        :max="store.state.pointsPerMatch"
                                         placeholder="0"
+                                        inputmode="numeric"
                                     />
                                 </div>
 
@@ -95,15 +93,13 @@ export default {
                                     <input
                                         type="number"
                                         class="game__score"
-                                        :class="{
-                                            'game__score--error': getScoreError(roundIndex, gameIndex)
-                                        }"
                                         v-model.number="game.score2"
-                                        @input="onScoreChange(roundIndex, gameIndex)"
+                                        @blur="onScore2Change(roundIndex, gameIndex)"
+                                        @input="onScoreInput(roundIndex, gameIndex)"
                                         :disabled="isRoundFrozen(roundIndex)"
                                         min="0"
-                                        :max="store.state.pointsPerMatch"
                                         placeholder="0"
+                                        inputmode="numeric"
                                     />
                                     <div class="game__players">
                                         <span>{{ game.team2[0] }}</span>
@@ -118,27 +114,33 @@ export default {
                             >
                                 {{ getScoreError(roundIndex, gameIndex) }}
                             </div>
+                            <div
+                                v-else-if="getScoreWarning(roundIndex, gameIndex)"
+                                class="game__warning"
+                            >
+                                {{ getScoreWarning(roundIndex, gameIndex) }}
+                            </div>
                         </div>
                     </div>
 
                     <div
                         v-if="getBenchPlayers(roundIndex).length > 0"
-                        class="round__bench"
+                        class="section-note"
                     >
-                        <span class="round__bench-label">On bench:</span>
-                        <span class="round__bench-players">{{ getBenchPlayers(roundIndex).join(', ') }}</span>
+                        On bench: {{ getBenchPlayers(roundIndex).join(', ') }}
                     </div>
-                </div>
 
-                <div class="tournament-actions">
                     <button
-                        class="button-primary button-large"
+                        v-if="roundIndex === tournament.rounds.length - 1"
+                        class="button-primary button-large round__save-button"
                         @click="createNextRound"
                         :disabled="!canCreateNextRound"
                     >
-                        {{ canCreateNextRound ? 'Create Next Round' : 'Complete current round first' }}
+                        Save Round
                     </button>
+                </div>
 
+                <div class="tournament-actions">
                     <button
                         class="button-with-border button-large"
                         @click="showLeaderboard = true"
@@ -155,6 +157,7 @@ export default {
             store,
             tournament: null,
             scoreErrors: {},
+            scoreWarnings: {},
             showLeaderboard: false,
             leaderboard: []
         };
@@ -165,14 +168,37 @@ export default {
             if (!this.tournament) return false;
             // Allow creating first round if no rounds exist
             if (this.tournament.rounds.length === 0) return true;
-            // Otherwise, require last round to be complete
-            return this.tournament.isLastRoundComplete();
+
+            const lastRoundIndex = this.tournament.rounds.length - 1;
+            const lastRound = this.tournament.rounds[lastRoundIndex];
+
+            // Check if there are any score errors in the current round
+            const hasErrors = Object.keys(this.scoreErrors).some(key =>
+                key.startsWith(lastRoundIndex + '-')
+            );
+            if (hasErrors) return false;
+
+            // Check if all scores are explicitly entered (not null or empty string)
+            const allScoresEntered = lastRound.games.every(game => {
+                // Require explicit values (including 0) - empty string, null, undefined, or NaN not allowed
+                const score1Valid = game.score1 !== null && game.score1 !== '' &&
+                                   game.score1 !== undefined && !isNaN(game.score1);
+                const score2Valid = game.score2 !== null && game.score2 !== '' &&
+                                   game.score2 !== undefined && !isNaN(game.score2);
+                return score1Valid && score2Valid;
+            });
+
+            return allScoresEntered;
         }
     },
 
     methods: {
         getScoreError(roundIndex, gameIndex) {
             return this.scoreErrors[roundIndex + '-' + gameIndex];
+        },
+
+        getScoreWarning(roundIndex, gameIndex) {
+            return this.scoreWarnings[roundIndex + '-' + gameIndex];
         },
 
         isRoundFrozen(roundIndex) {
@@ -214,26 +240,75 @@ export default {
             }
         },
 
-        onScoreChange(roundIndex, gameIndex) {
+        onScoreInput(roundIndex, gameIndex) {
+            const key = roundIndex + '-' + gameIndex;
+            // Clear messages while typing
+            delete this.scoreErrors[key];
+            delete this.scoreWarnings[key];
+        },
+
+        onScore1Change(roundIndex, gameIndex) {
             const game = this.tournament.rounds[roundIndex].games[gameIndex];
             const key = roundIndex + '-' + gameIndex;
 
-            // Clear previous error
+            // Clear previous messages
             delete this.scoreErrors[key];
+            delete this.scoreWarnings[key];
 
-            // Validate if both scores are entered
+            // Auto-calculate score2 if it's empty and score1 has a value
+            if ((game.score1 !== null && game.score1 !== '') && (game.score2 === null || game.score2 === '')) {
+                const score1 = Number(game.score1);
+                if (score1 >= 0 && score1 <= this.store.state.pointsPerMatch) {
+                    game.score2 = this.store.state.pointsPerMatch - score1;
+                }
+            }
+
+            this.validateAndSaveScore(roundIndex, gameIndex);
+        },
+
+        onScore2Change(roundIndex, gameIndex) {
+            const game = this.tournament.rounds[roundIndex].games[gameIndex];
+            const key = roundIndex + '-' + gameIndex;
+
+            // Clear previous messages
+            delete this.scoreErrors[key];
+            delete this.scoreWarnings[key];
+
+            // Auto-calculate score1 if it's empty and score2 has a value
+            if ((game.score2 !== null && game.score2 !== '') && (game.score1 === null || game.score1 === '')) {
+                const score2 = Number(game.score2);
+                if (score2 >= 0 && score2 <= this.store.state.pointsPerMatch) {
+                    game.score1 = this.store.state.pointsPerMatch - score2;
+                }
+            }
+
+            this.validateAndSaveScore(roundIndex, gameIndex);
+        },
+
+        validateAndSaveScore(roundIndex, gameIndex) {
+            const game = this.tournament.rounds[roundIndex].games[gameIndex];
+            const key = roundIndex + '-' + gameIndex;
+
+            // Only validate if both scores are entered
             if (game.score1 !== null && game.score1 !== '' && game.score2 !== null && game.score2 !== '') {
                 const score1 = Number(game.score1);
                 const score2 = Number(game.score2);
 
+                // Error: negative scores
                 if (score1 < 0 || score2 < 0) {
                     this.scoreErrors[key] = 'Scores cannot be negative';
                     return;
                 }
 
-                if (score1 + score2 !== this.store.state.pointsPerMatch) {
-                    this.scoreErrors[key] = 'Scores must sum to ' + this.store.state.pointsPerMatch;
+                // Error: scores add up to more than pointsPerMatch
+                if (score1 + score2 > this.store.state.pointsPerMatch) {
+                    this.scoreErrors[key] = `Scores cannot add up to more than ${this.store.state.pointsPerMatch}`;
                     return;
+                }
+
+                // Warning: scores add up to less than pointsPerMatch
+                if (score1 + score2 < this.store.state.pointsPerMatch) {
+                    this.scoreWarnings[key] = `Scores add up to ${score1 + score2} (expected ${this.store.state.pointsPerMatch})`;
                 }
 
                 // Valid score - update tournament
@@ -298,7 +373,7 @@ export default {
 
         updateLeaderboard() {
             if (this.tournament) {
-                this.leaderboard = this.tournament.getLeaderboard();
+                this.leaderboard = this.tournament.getLeaderboard(true);
             }
         },
 

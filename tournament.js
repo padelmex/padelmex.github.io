@@ -87,6 +87,16 @@ export class Tournament {
         if (typeof config.randomize !== 'boolean') {
             throw new Error('Randomize must be a boolean');
         }
+
+        // Validate benchingMode
+        if (config.benchingMode !== undefined) {
+            if (typeof config.benchingMode !== 'string') {
+                throw new Error('Benching mode must be a string');
+            }
+            if (!['round-robin', 'random'].includes(config.benchingMode)) {
+                throw new Error('Benching mode must be either "round-robin" or "random"');
+            }
+        }
     }
 
     /**
@@ -95,6 +105,7 @@ export class Tournament {
      * @param {Array<string>} config.courts - Court names
      * @param {number} config.pointsPerMatch - Total points per match
      * @param {boolean} config.randomize - Whether to randomize teams
+     * @param {string} config.benchingMode - Benching mode: 'round-robin' or 'random' (default: 'round-robin')
      */
     constructor(config) {
         // Validate configuration
@@ -104,10 +115,14 @@ export class Tournament {
         this.courts = [...config.courts];
         this.pointsPerMatch = config.pointsPerMatch;
         this.randomize = config.randomize;
+        this.benchingMode = config.benchingMode || 'round-robin';
 
         // Calculate seed for deterministic behavior
         this.seed = this.calculateSeed();
         this.rng = new SeededRandom(this.seed);
+
+        // Create bench rotation order for round-robin benching
+        this.benchRotation = [...this.players];
 
         /**
          * @type {Array<{games: Array<{court: string, team1: Array<string>, team2: Array<string>, score1: number|null, score2: number|null}>}>}
@@ -140,37 +155,51 @@ export class Tournament {
     }
 
     /**
-     * Get players who should play next, prioritizing those who sat out longest
+     * Get players who should play next based on benching mode
      */
     getPlayersForNextRound() {
         const currentRound = this.rounds.length;
         const playersPerRound = this.courts.length * 4; // 4 players per court
 
-        // If we have enough players for all courts, select fairly
+        // If we have enough players for all courts, everyone plays
         if (this.players.length <= playersPerRound) {
             return [...this.players];
         }
 
-        // Sort players by priority: rounds sat out (desc), last played round (asc), then name for consistency
-        const sortedPlayers = [...this.players].sort((a, b) => {
-            const statsA = this.playerStats[a];
-            const statsB = this.playerStats[b];
+        if (this.benchingMode === 'round-robin') {
+            // Round-robin: Fixed rotation order
+            return this.getRoundRobinPlayers(currentRound, playersPerRound);
+        } else {
+            // Random: Seeded random selection
+            return this.getRandomPlayers(currentRound, playersPerRound);
+        }
+    }
 
-            // First priority: players who sat out more rounds
-            if (statsB.roundsSatOut !== statsA.roundsSatOut) {
-                return statsB.roundsSatOut - statsA.roundsSatOut;
-            }
+    /**
+     * Get players for round-robin benching (fixed order rotation)
+     */
+    getRoundRobinPlayers(currentRound, playersPerRound) {
+        const numBenched = this.players.length - playersPerRound;
+        const benchStartIndex = (currentRound * numBenched) % this.players.length;
 
-            // Second priority: players who played longer ago
-            if (statsA.lastPlayedRound !== statsB.lastPlayedRound) {
-                return statsA.lastPlayedRound - statsB.lastPlayedRound;
-            }
+        // Determine which players are benched this round
+        const benchedIndices = new Set();
+        for (let i = 0; i < numBenched; i++) {
+            benchedIndices.add((benchStartIndex + i) % this.players.length);
+        }
 
-            // Third priority: deterministic ordering by name
-            return a.localeCompare(b);
-        });
+        // Return players not benched (in bench rotation order)
+        return this.benchRotation.filter((player, index) => !benchedIndices.has(index));
+    }
 
-        return sortedPlayers.slice(0, playersPerRound);
+    /**
+     * Get players for random benching (seeded random selection)
+     */
+    getRandomPlayers(currentRound, playersPerRound) {
+        // Create a round-specific RNG for deterministic benching
+        const roundRng = new SeededRandom(this.seed + currentRound);
+        const shuffled = roundRng.shuffle(this.players);
+        return shuffled.slice(0, playersPerRound);
     }
 
     /**
@@ -211,7 +240,7 @@ export class Tournament {
         if (this.randomize && currentRound > 0) {
             // For randomization, slightly shuffle the middle pairs to avoid repetition
             // but keep top players mostly together
-            pairedPlayers = this.applySmartRandomization(rankedActivePlayers);
+            pairedPlayers = this.applySmartRandomization(rankedActivePlayers, currentRound);
         } else {
             pairedPlayers = rankedActivePlayers;
         }
@@ -225,8 +254,8 @@ export class Tournament {
             if (courtPlayers.length === 4) {
                 const game = {
                     court: this.courts[i],
-                    team1: [courtPlayers[0], courtPlayers[1]],
-                    team2: [courtPlayers[2], courtPlayers[3]],
+                    team1: [courtPlayers[0], courtPlayers[2]],  // Players 1 & 3
+                    team2: [courtPlayers[1], courtPlayers[3]],  // Players 2 & 4
                     score1: null,
                     score2: null
                 };
@@ -248,7 +277,10 @@ export class Tournament {
      * Apply smart randomization to prevent repetitive pairings
      * while maintaining competitive balance
      */
-    applySmartRandomization(rankedPlayers) {
+    applySmartRandomization(rankedPlayers, currentRound) {
+        // Create round-specific RNG for deterministic behavior
+        const roundRng = new SeededRandom(this.seed + currentRound + 1000);
+
         const result = [...rankedPlayers];
         const numCourts = Math.floor(rankedPlayers.length / 4);
 
@@ -259,19 +291,19 @@ export class Tournament {
 
             // Randomly swap within pairs to create variety
             // Swap positions 0 and 1 (team 1)
-            if (this.rng.next() > 0.5) {
+            if (roundRng.next() > 0.5) {
                 [result[startIdx], result[startIdx + 1]] = [result[startIdx + 1], result[startIdx]];
             }
 
             // Swap positions 2 and 3 (team 2)
-            if (this.rng.next() > 0.5) {
+            if (roundRng.next() > 0.5) {
                 [result[startIdx + 2], result[startIdx + 3]] = [result[startIdx + 3], result[startIdx + 2]];
             }
 
             // Occasionally swap between teams (creates more variety)
-            if (this.rng.next() > 0.7) {
-                const pos1 = startIdx + (this.rng.next() > 0.5 ? 0 : 1);
-                const pos2 = startIdx + (this.rng.next() > 0.5 ? 2 : 3);
+            if (roundRng.next() > 0.7) {
+                const pos1 = startIdx + (roundRng.next() > 0.5 ? 0 : 1);
+                const pos2 = startIdx + (roundRng.next() > 0.5 ? 2 : 3);
                 [result[pos1], result[pos2]] = [result[pos2], result[pos1]];
             }
         }
@@ -288,8 +320,7 @@ export class Tournament {
 
         return round.games.every(game =>
             game.score1 !== null &&
-            game.score2 !== null &&
-            game.score1 + game.score2 === this.pointsPerMatch
+            game.score2 !== null
         );
     }
 
@@ -312,10 +343,6 @@ export class Tournament {
         // Validate scores
         if (score1 < 0 || score2 < 0) {
             throw new Error('Scores cannot be negative');
-        }
-
-        if (score1 + score2 !== this.pointsPerMatch) {
-            throw new Error(`Scores must sum to ${this.pointsPerMatch}`);
         }
 
         const game = this.rounds[roundIndex].games[gameIndex];
@@ -373,8 +400,9 @@ export class Tournament {
 
     /**
      * Calculate leaderboard
+     * @param {boolean} excludeLastRound - Whether to exclude the last (unsaved) round from the leaderboard
      */
-    getLeaderboard() {
+    getLeaderboard(excludeLastRound = false) {
         const scores = {};
 
         // Initialize all players
@@ -388,8 +416,14 @@ export class Tournament {
             };
         });
 
-        // Calculate scores from all rounds
-        this.rounds.forEach(round => {
+        // Determine which rounds to include
+        // When excludeLastRound=true: exclude the last (unsaved) round for display purposes
+        // When excludeLastRound=false: include all rounds for internal pairing logic
+        const roundsToInclude = excludeLastRound && this.rounds.length > 0
+            ? this.rounds.slice(0, -1)
+            : this.rounds;
+
+        roundsToInclude.forEach(round => {
             round.games.forEach(game => {
                 if (game.score1 !== null && game.score2 !== null) {
                     // Team 1
@@ -457,6 +491,8 @@ export class Tournament {
             courts: this.courts,
             pointsPerMatch: this.pointsPerMatch,
             randomize: this.randomize,
+            benchingMode: this.benchingMode,
+            benchRotation: this.benchRotation,
             rounds: this.rounds,
             playerStats: this.playerStats
         };
@@ -470,15 +506,21 @@ export class Tournament {
             players: data.players,
             courts: data.courts,
             pointsPerMatch: data.pointsPerMatch,
-            randomize: data.randomize
+            randomize: data.randomize,
+            benchingMode: data.benchingMode || 'round-robin'
         });
 
         // Clear the auto-generated first round
         tournament.rounds = [];
 
-        // Restore rounds and player stats
+        // Restore rounds, player stats, and bench rotation
         tournament.rounds = data.rounds;
         tournament.playerStats = data.playerStats;
+
+        // Restore benchRotation if available (for backward compatibility)
+        if (data.benchRotation) {
+            tournament.benchRotation = data.benchRotation;
+        }
 
         return tournament;
     }

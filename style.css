@@ -109,6 +109,13 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
+/* Utility Styles */
+.section-note {
+    font-size: 0.9rem;
+    color: #9ca3af;
+    line-height: 1.5;
+}
+
 /* Button Styles */
 .button-with-border {
     padding: 0.1rem 0.4rem;
@@ -182,10 +189,19 @@ h1, h2, h3, h4, h5, h6 {
     border-color: #000;
 }
 
+.config__radio-label:has(input:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .config__radio {
     width: 1.2rem;
     height: 1.2rem;
     cursor: pointer;
+}
+
+.config__radio:disabled {
+    cursor: not-allowed;
 }
 
 .config__radio-text {
@@ -203,6 +219,17 @@ h1, h2, h3, h4, h5, h6 {
 .config__custom-input:disabled {
     background: #f9fafb;
     color: var(--light-grey);
+}
+
+/* Remove spinner arrows from number inputs */
+.config__custom-input::-webkit-outer-spin-button,
+.config__custom-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.config__custom-input[type=number] {
+    -moz-appearance: textfield;
 }
 
 /* List Styles */
@@ -424,6 +451,23 @@ h1, h2, h3, h4, h5, h6 {
     line-height: 1.5;
 }
 
+.config__button-info {
+    padding: 0.75rem;
+    background: #f3f4f6;
+    color: #6b7280;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.config__button-info--warning {
+    display: block;
+    color: #d97706;
+    font-weight: 500;
+    margin-top: 0.25rem;
+}
+
 /* Mobile optimizations */
 @media (max-width: 450px) {
     .config__section-title {
@@ -574,23 +618,8 @@ h1, h2, h3, h4, h5, h6 {
     gap: 0.75rem;
 }
 
-.round__bench {
-    margin-top: 0.75rem;
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    color: #6b7280;
-    background: #f9fafb;
-    border-radius: 4px;
-}
-
-.round__bench-label {
-    font-weight: 600;
-    color: #9ca3af;
-    margin-right: 0.5rem;
-}
-
-.round__bench-players {
-    color: #6b7280;
+.round__save-button {
+    width: 100%;
 }
 
 /* Game */
@@ -672,9 +701,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .game__score--error {
-    background: #fee2e2;
-    border-color: #dc2626;
-    color: #991b1b;
+    /* Error styling removed - error message is shown below input instead */
+}
+
+.game__score--warning {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #92400e;
 }
 
 .game__score:disabled {
@@ -682,6 +715,17 @@ h1, h2, h3, h4, h5, h6 {
     color: #6b7280;
     cursor: not-allowed;
     border-color: #e5e7eb;
+}
+
+/* Remove spinner arrows from score inputs */
+.game__score::-webkit-outer-spin-button,
+.game__score::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.game__score[type=number] {
+    -moz-appearance: textfield;
 }
 
 .game__vs {
@@ -703,12 +747,23 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 500;
 }
 
+.game__warning {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #fef3c7;
+    color: #f59e0b;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    text-align: center;
+    font-weight: 500;
+}
+
 /* Tournament Actions */
 .tournament-actions {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    margin-top: 1rem;
+    margin-top: 2.5rem;
 }
 
 .tournament-actions button {

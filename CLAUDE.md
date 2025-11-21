@@ -1,8 +1,8 @@
-# Paddle Mexican Tournament - Code Style and Architecture Guide
+# Padel Mexicano Tournament - Code Style and Architecture Guide
 
 ## Project Overview
 
-This is a Progressive Web App (PWA) for organizing and managing Mexican paddle tournaments. It's a client-side only application built with Vue.js 3, requiring no server or build steps.
+This is a Progressive Web App (PWA) for organizing and managing Padel Mexicano tournaments. It's a client-side only application built with Vue.js 3, requiring no server or build steps.
 
 ## Architecture
 

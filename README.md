@@ -1,6 +1,6 @@
-# Paddle Mexican Tournament
+# Padel Mexicano Tournament
 
-A Progressive Web App for organizing and managing Mexican paddle tournaments. The app runs entirely in the browser with no server required, storing all data locally for privacy and offline access.
+A Progressive Web App for organizing and managing Padel Mexicano tournaments. The app runs entirely in the browser with no server required, storing all data locally for privacy and offline access.
 
 ## Features
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Cache-busting version bump script for Paddle Mexican Tournament PWA.
+Cache-busting version bump script for Padel Mexicano Tournament PWA.
 
 This script updates all version query strings (?v=YYYYMMDDHHmmss) throughout
 the codebase to bust browser caches during development, and auto-increments
@@ -26,8 +26,8 @@ def increment_cache_version(content):
     """
     Increment the cache version number in service worker.
 
-    Extracts version number from CACHE_NAME (e.g., 'paddle-mexican-v4')
-    and increments it (e.g., to 'paddle-mexican-v5').
+    Extracts version number from CACHE_NAME (e.g., 'padel-mexicano-v4')
+    and increments it (e.g., to 'padel-mexicano-v5').
 
     Args:
         content: Service worker file content
@@ -35,8 +35,8 @@ def increment_cache_version(content):
     Returns:
         Tuple of (updated content, old version, new version)
     """
-    # Pattern to match CACHE_NAME = 'paddle-mexican-vN'
-    pattern = r"(const CACHE_NAME = ['\"]paddle-mexican-v)(\d+)(['\"];)"
+    # Pattern to match CACHE_NAME = 'padel-mexicano-vN'
+    pattern = r"(const CACHE_NAME = ['\"]padel-mexicano-v)(\d+)(['\"];)"
 
     match = re.search(pattern, content)
     if not match:

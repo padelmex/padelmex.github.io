@@ -1,7 +1,7 @@
 {
-  "name": "Paddle Mexican Tournament",
-  "short_name": "Paddle Mexican",
-  "description": "Organize and manage Mexican paddle tournaments",
+  "name": "Padel Mexicano Tournament",
+  "short_name": "Padel Mexicano",
+  "description": "Organize and manage Padel Mexicano tournaments",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",

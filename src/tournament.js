@@ -22,7 +22,7 @@ class SeededRandom {
 }
 
 /**
- * Tournament class for managing Mexican paddle tournaments
+ * Tournament class for managing Padel Mexicano tournaments
  */
 export class Tournament {
     /**

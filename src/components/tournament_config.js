@@ -193,14 +193,14 @@ export default {
             </div>
           </div>
 
-          <!-- Info About Mexican Tournament -->
+          <!-- Info About Padel Mexicano Tournament -->
           <section class="config__section config__info-section">
-            <h3 class="config__info-title">What is a Mexican Tournament?</h3>
+            <h3 class="config__info-title">What is a Padel Mexicano Tournament?</h3>
 
             <div class="config__info-block">
               <h4 class="config__info-subtitle">Overview</h4>
               <p class="config__info-text">
-                A Mexican tournament is a dynamic format where players compete in multiple rounds,
+                A Padel Mexicano tournament is a dynamic format where players compete in multiple rounds,
                 with pairings determined by current standings after each round. This ensures
                 competitive balance throughout the event, as players face opponents of similar skill level.
               </p>
@@ -244,7 +244,7 @@ export default {
             </div>
 
             <div class="config__info-block">
-              <h4 class="config__info-subtitle">Why Play Mexican Style?</h4>
+              <h4 class="config__info-subtitle">Why Play Mexicano Style?</h4>
               <ul class="config__info-list">
                 <li><strong>Fair Competition:</strong> Everyone plays against similarly skilled opponents</li>
                 <li><strong>Social:</strong> You meet and play with all participants throughout the tournament</li>

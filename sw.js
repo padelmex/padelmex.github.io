@@ -1,9 +1,14 @@
-const CACHE_NAME = 'paddle-mexican-v4';
-const urlsToCache = [
+const CACHE_NAME = 'paddle-mexican-v9';
+const VERSION = '20251121124650';
+
+// Base URLs without version strings
+const baseUrls = [
   './',
   './index.html',
-  './styles/style.css?v=20251120193535',
-  './src/app.js?v=20251120193535',
+  './manifest.json',
+  './styles/style.css',
+  './src/app.js',
+  './src/config.js',
   './src/store.js',
   './src/tournament.js',
   './lib/vue.esm-browser.prod.js',
@@ -13,6 +18,15 @@ const urlsToCache = [
   './assets/icon-192.png',
   './assets/icon-512.png'
 ];
+
+// Append version to all URLs
+const urlsToCache = baseUrls.map(url => {
+  // Don't add version to root path
+  if (url === './') {
+    return url;
+  }
+  return `${url}?v=${VERSION}`;
+});
 
 // Install event - cache all static assets
 self.addEventListener('install', (event) => {

@@ -3,7 +3,8 @@
 Cache-busting version bump script for Paddle Mexican Tournament PWA.
 
 This script updates all version query strings (?v=YYYYMMDDHHmmss) throughout
-the codebase to bust browser caches during development.
+the codebase to bust browser caches during development, and auto-increments
+the service worker cache version.
 
 Usage:
     python3 bump-version.py
@@ -21,9 +22,44 @@ def generate_version():
     return datetime.now().strftime("%Y%m%d%H%M%S")
 
 
+def increment_cache_version(content):
+    """
+    Increment the cache version number in service worker.
+
+    Extracts version number from CACHE_NAME (e.g., 'paddle-mexican-v4')
+    and increments it (e.g., to 'paddle-mexican-v5').
+
+    Args:
+        content: Service worker file content
+
+    Returns:
+        Tuple of (updated content, old version, new version)
+    """
+    # Pattern to match CACHE_NAME = 'paddle-mexican-vN'
+    pattern = r"(const CACHE_NAME = ['\"]paddle-mexican-v)(\d+)(['\"];)"
+
+    match = re.search(pattern, content)
+    if not match:
+        return content, None, None
+
+    old_version_num = int(match.group(2))
+    new_version_num = old_version_num + 1
+
+    old_version = f"v{old_version_num}"
+    new_version = f"v{new_version_num}"
+
+    # Replace the version number
+    new_content = re.sub(pattern, rf"\g<1>{new_version_num}\g<3>", content)
+
+    return new_content, old_version, new_version
+
+
 def update_version_in_file(file_path, old_version, new_version):
     """
     Update version strings in a file.
+
+    For sw.js, updates the VERSION constant.
+    For other files, updates ?v= query strings.
 
     Args:
         file_path: Path to the file to update
@@ -37,17 +73,37 @@ def update_version_in_file(file_path, old_version, new_version):
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # Pattern to match ?v= followed by 14 digits (YYYYMMDDHHmmss)
-        pattern = r'\?v=(\d{14})'
+        count = 0
 
-        # Find the old version if not provided
-        if old_version is None:
-            match = re.search(pattern, content)
+        # Special handling for sw.js - update VERSION constant
+        if file_path.name == 'sw.js':
+            # Pattern to match: const VERSION = '20251121105904';
+            version_const_pattern = r"(const VERSION = ['\"])(\d{14})(['\"];)"
+            match = re.search(version_const_pattern, content)
+
             if match:
-                old_version = match.group(1)
+                if old_version is None:
+                    old_version = match.group(2)
+                new_content = re.sub(version_const_pattern, rf"\g<1>{new_version}\g<3>", content)
+                count = 1
+            else:
+                # Fallback to ?v= pattern if VERSION const not found
+                pattern = r'\?v=(\d{14})'
+                if old_version is None:
+                    match = re.search(pattern, content)
+                    if match:
+                        old_version = match.group(1)
+                new_content, count = re.subn(pattern, f'?v={new_version}', content)
+        else:
+            # For other files, replace ?v= query strings
+            pattern = r'\?v=(\d{14})'
 
-        # Replace all occurrences
-        new_content, count = re.subn(pattern, f'?v={new_version}', content)
+            if old_version is None:
+                match = re.search(pattern, content)
+                if match:
+                    old_version = match.group(1)
+
+            new_content, count = re.subn(pattern, f'?v={new_version}', content)
 
         if count > 0:
             with open(file_path, 'w', encoding='utf-8') as f:
@@ -67,21 +123,22 @@ def main():
     # Get script directory
     script_dir = Path(__file__).parent
 
-    # Files to update
+    # Files to update with version query strings
     files_to_update = [
         script_dir / "index.html",
         script_dir / "sw.js",
     ]
 
-    # Generate new version
+    # Generate new timestamp version
     new_version = generate_version()
 
     # Track changes
     old_version = None
     total_changes = 0
     files_changed = []
+    cache_version_info = None
 
-    # Update each file
+    # Update each file's version query strings
     for file_path in files_to_update:
         count, found_version = update_version_in_file(file_path, old_version, new_version)
 
@@ -93,14 +150,38 @@ def main():
             if old_version is None and found_version:
                 old_version = found_version
 
+    # Increment cache version in service worker
+    sw_path = script_dir / "sw.js"
+    try:
+        with open(sw_path, 'r', encoding='utf-8') as f:
+            sw_content = f.read()
+
+        new_sw_content, old_cache_ver, new_cache_ver = increment_cache_version(sw_content)
+
+        if old_cache_ver and new_cache_ver:
+            with open(sw_path, 'w', encoding='utf-8') as f:
+                f.write(new_sw_content)
+            cache_version_info = f"{old_cache_ver} → {new_cache_ver}"
+
+    except Exception as e:
+        print(f"Warning: Could not increment cache version: {e}")
+
     # Report results
+    print("\n" + "=" * 60)
     if total_changes > 0:
-        print(f"✓ Updated version: {old_version} → {new_version}")
+        print(f"✓ Updated timestamp version: {old_version} → {new_version}")
         print(f"✓ Files updated: {', '.join(files_changed)}")
-        print(f"✓ Total changes: {total_changes}")
+        print(f"✓ Total version string changes: {total_changes}")
     else:
-        print("No version strings found to update.")
-        print("Ensure files contain ?v= followed by 14-digit timestamps.")
+        print("⚠ No version strings found to update.")
+        print("  Ensure files contain ?v= followed by 14-digit timestamps.")
+
+    if cache_version_info:
+        print(f"✓ Service worker cache version: {cache_version_info}")
+    else:
+        print("⚠ Cache version not incremented")
+
+    print("=" * 60 + "\n")
 
 
 if __name__ == "__main__":

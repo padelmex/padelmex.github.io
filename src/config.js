@@ -11,7 +11,7 @@ export const config = {
      * Set to false for local development to avoid cache issues
      * @type {boolean}
      */
-    ENABLE_CACHE: true,
+    ENABLE_CACHE: false,
 
     /**
      * Show or hide debug menu in tournament configuration

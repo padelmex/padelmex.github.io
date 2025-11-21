@@ -149,7 +149,7 @@ export default {
                   class="config__radio"
                   :disabled="waitingCount === 0"
                 >
-                <span class="config__radio-text">Round Robin - Players bench in fixed rotation order</span>
+                <span class="config__radio-text">Round Robin - Players bench in fixed rotation order. Recommended</span>
               </label>
               <label class="config__radio-label">
                 <input
@@ -165,16 +165,6 @@ export default {
             </div>
             <div v-if="waitingCount === 0" class="section-note">
               Benching mode is only needed when there are more players than seats.
-            </div>
-          </section>
-
-          <!-- Debug Buttons -->
-          <section v-if="showDebugMenu" class="config__section config__debug-section">
-            <h3 class="config__debug-title">Debug Tools</h3>
-            <div class="config__debug-buttons">
-              <button @click="fillDummyData" class="button-with-border">
-                Fill Dummy Data
-              </button>
             </div>
           </section>
 
@@ -264,6 +254,13 @@ export default {
               </ul>
             </div>
           </section>
+
+          <!-- Debug Footer -->
+          <footer v-if="showDebugMenu" class="config__debug-footer">
+            <button @click="fillDummyData" class="config__debug-link">
+              Fill Dummy Data
+            </button>
+          </footer>
         </main>
       </div>
     `,

@@ -20,13 +20,21 @@ This is a Progressive Web App (PWA) for organizing and managing Mexican paddle t
 ```
 paddle-mexican/
 ├── index.html          # Entry point
-├── app.js              # Main app initialization
-├── store.js            # Centralized state management
-├── style.css           # Global styles
-├── components/         # Vue components
+├── manifest.json       # PWA manifest
+├── sw.js               # Service Worker
+├── README.md
+├── CLAUDE.md
+├── src/                # Source code
+│   ├── app.js          # Main app initialization
+│   ├── store.js        # Centralized state management
+│   ├── config.js       # Application configuration
+│   ├── tournament.js   # Tournament logic
+│   └── components/     # Vue components
+├── styles/             # Stylesheets
+│   └── style.css       # Global styles
 ├── lib/                # Vendored libraries (Vue)
 ├── assets/             # Static assets (images, icons)
-└── README.md
+└── tests/              # Test files
 ```
 
 ### Key Principles
@@ -226,7 +234,7 @@ mounted() {
 
 - Include proper meta tags for PWA
 - Use importmap for module resolution
-- Add version query strings to bust cache: `style.css?v=20251119204632
+- Add version query strings to bust cache: `styles/style.css?v=20251119204632
 - Include critical CSS inline to prevent FOUC
 - Add noscript fallback
 

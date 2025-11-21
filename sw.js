@@ -1,14 +1,14 @@
-const CACHE_NAME = 'paddle-mexican-v3';
+const CACHE_NAME = 'paddle-mexican-v4';
 const urlsToCache = [
   './',
   './index.html',
-  './style.css?v=20251120140131',
-  './app.js?v=20251120140131',
-  './store.js',
-  './tournament.js',
+  './styles/style.css?v=20251120193535',
+  './src/app.js?v=20251120193535',
+  './src/store.js',
+  './src/tournament.js',
   './lib/vue.esm-browser.prod.js',
-  './components/tournament_page.js',
-  './components/tournament_config.js',
+  './src/components/tournament_page.js',
+  './src/components/tournament_config.js',
   './assets/favicon.png',
   './assets/icon-192.png',
   './assets/icon-512.png'

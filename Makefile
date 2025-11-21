@@ -2,7 +2,7 @@
 
 # Run all tests
 test:
-	@node test-runner.js
+	@node tests/test-runner.js
 
 # Start development server
 serve:

@@ -1,30 +1,48 @@
 # Paddle Mexican Tournament
 
-A Progressive Web App for organizing and managing Mexican paddle tournaments.
+A Progressive Web App for organizing and managing Mexican paddle tournaments. The app runs entirely in the browser with no server required, storing all data locally for privacy and offline access.
 
 ## Features
 
-Coming soon...
+- **Tournament Setup**: Configure tournaments with custom players and court names
+- **Smart Pairing**: Automatic team pairing based on leaderboard rankings
+- **Score Tracking**: Track scores for each game with real-time updates
+- **Live Leaderboard**: View player standings with points, wins, losses, and games played
+- **Benching Modes**: Support for round-robin or random benching when you have more players than court capacity
+- **Randomization**: Optional deterministic randomization to prevent repetitive pairings
+- **Offline Support**: Works completely offline after initial load with service worker caching
+- **Mobile-First**: Responsive design optimized for mobile devices
+- **Local Storage**: All tournament data stays in your browser - no data sent to servers
 
 ## Getting Started
 
-The app doesn't require any build steps. Just open the index.html file in your browser.
+The app doesn't require any build steps or dependencies. You can run it directly in your browser.
+
+### Quick Start (Local Development)
+
+Since the app uses ES modules, you'll need to serve it over HTTP (not `file://`):
 
 ```bash
-open index.html
-```
-
-## Development
-
-### Running a Local Server
-
-For development with ES modules, use Python's built-in HTTP server:
-
-```bash
+# Using Python's built-in HTTP server (recommended)
 python3 -m http.server 8000
+
+# Or using the Makefile
+make serve
 ```
 
 Then open http://localhost:8000 in your browser.
+
+## Development
+
+### Running Tests
+
+Run the test suite using:
+
+```bash
+make test
+# or
+node tests/test-runner.js
+```
 
 ### Cache Busting
 
@@ -45,8 +63,72 @@ Example output:
 ✓ Total changes: 4
 ```
 
+### Configuration
+
+Edit `src/config.js` to toggle development settings:
+
+- `ENABLE_CACHE`: Enable/disable service worker caching (set to `false` during development)
+- `SHOW_DEBUG_MENU`: Show/hide debug menu in tournament configuration
+
+## Technology Stack
+
+- **Framework**: Vue 3 (vendored, no npm dependencies)
+- **Module System**: ES modules with importmap
+- **State Management**: Vue reactive store pattern
+- **Persistence**: localStorage
+- **Styling**: Plain CSS with CSS variables
+- **PWA**: Service Worker for offline support
+- **Build**: None required - runs directly in browser
+
+## Project Structure
+
+```
+paddle-mexican/
+├── index.html          # Entry point
+├── manifest.json       # PWA manifest
+├── sw.js               # Service Worker
+├── src/                # Source code
+│   ├── app.js          # Main app initialization
+│   ├── store.js        # Centralized state management
+│   ├── config.js       # Application configuration
+│   ├── tournament.js   # Tournament logic
+│   └── components/     # Vue components
+│       ├── tournament_config.js
+│       └── tournament_page.js
+├── styles/             # Stylesheets
+│   └── style.css       # Global styles
+├── lib/                # Vendored libraries (Vue)
+├── assets/             # Static assets (favicon, icons)
+├── tests/              # Test files
+└── Makefile            # Development commands
+```
+
+## How It Works
+
+### Tournament Logic
+
+1. **Setup Phase**: Configure players, courts, points per match, and benching mode
+2. **Round Generation**:
+   - First round uses initial player order
+   - Subsequent rounds pair players based on leaderboard rankings
+   - Optional randomization prevents repetitive pairings while maintaining competitive balance
+3. **Score Tracking**: Enter scores for each game as they complete
+4. **Leaderboard**: Players ranked by total points, then games played, then alphabetically
+5. **Next Round**: Once all games complete, advance to the next round with updated pairings
+
+### Benching Modes
+
+- **Round-robin**: Players bench in a fixed rotation order, ensuring everyone benches equally
+- **Random**: Seeded random selection for benching (deterministic for consistency)
+
+## Browser Requirements
+
+- Modern browsers with ES module support (Chrome, Firefox, Safari, Edge)
+- JavaScript must be enabled
+- localStorage support required for data persistence
+
 ## About
 
-All data is stored locally in your browser's storage, ensuring simplicity and privacy.
+All data is stored locally in your browser's storage, ensuring complete privacy. No data is ever sent to external servers.
 
-Based on the architecture of the [Last mile](https://mile.marnikitta.com) app.
+For code style guidelines and architecture details, see [CLAUDE.md](CLAUDE.md).

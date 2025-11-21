@@ -1,4 +1,4 @@
-import { Tournament } from './tournament.js';
+import { Tournament } from '../src/tournament.js';
 
 /**
  * Simple test runner

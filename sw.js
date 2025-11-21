@@ -1,5 +1,5 @@
-const CACHE_NAME = 'paddle-mexican-v9';
-const VERSION = '20251121124650';
+const CACHE_NAME = 'paddle-mexican-v10';
+const VERSION = '20251121145600';
 
 // Base URLs without version strings
 const baseUrls = [

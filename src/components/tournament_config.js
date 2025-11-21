@@ -394,8 +394,7 @@ export default {
                 'Artem',
                 'Nikolay',
                 'Stephen',
-                'Sergei',
-                'Sanjar'
+                'Sergei'
             ];
             this.courts = [
                 'First court',
@@ -403,7 +402,7 @@ export default {
             ];
             this.pointsPerMatch = 16;
             this.randomize = true;
-            this.benchingMode = 'random';
+            this.benchingMode = 'round-robin';
         }
     }
 };

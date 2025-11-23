@@ -1,5 +1,5 @@
-const CACHE_NAME = 'padel-mexicano-v13';
-const VERSION = '20251121170724';
+const CACHE_NAME = 'padel-mexicano-v14';
+const VERSION = '20251123120000';
 
 // Base URLs without version strings
 const baseUrls = [
@@ -59,12 +59,17 @@ self.addEventListener('activate', (event) => {
 // Fetch event - serve from cache first, fallback to network
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request)
+    // Only search in the current cache to avoid serving stale content from old caches
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.match(event.request))
       .then((response) => {
         // Cache hit - return response
         if (response) {
+          console.log('Serving from cache:', event.request.url, 'Cache:', CACHE_NAME);
           return response;
         }
+
+        console.log('Cache miss, fetching from network:', event.request.url);
 
         // Clone the request
         const fetchRequest = event.request.clone();
@@ -74,6 +79,8 @@ self.addEventListener('fetch', (event) => {
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
+
+          console.log('Caching new response:', event.request.url);
 
           // Clone the response
           const responseToCache = response.clone();

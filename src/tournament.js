@@ -1,14 +1,24 @@
 /**
- * Seeded random number generator for deterministic behavior
+ * Mulberry32 - High-quality seeded random number generator
+ * Much better statistical properties than LCG, no correlation between consecutive seeds
  */
-class SeededRandom {
+class Mulberry32 {
     constructor(seed) {
-        this.seed = seed;
+        // Mix the seed using a hash function to avoid correlation with consecutive seeds
+        seed = seed >>> 0; // Ensure unsigned 32-bit integer
+        seed = seed ^ (seed >>> 16);
+        seed = Math.imul(seed, 0x7feb352d);
+        seed = seed ^ (seed >>> 15);
+        seed = Math.imul(seed, 0x846ca68b);
+        seed = seed ^ (seed >>> 16);
+        this.seed = seed >>> 0;
     }
 
     next() {
-        this.seed = (this.seed * 9301 + 49297) % 233280;
-        return this.seed / 233280;
+        let t = this.seed += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
     }
 
     shuffle(array) {
@@ -186,7 +196,8 @@ export class Tournament {
      */
     getRandomPlayers(currentRound, playersPerRound) {
         // Create a round-specific RNG for deterministic benching
-        const roundRng = new SeededRandom(this.seed + currentRound);
+        // Mulberry32 has excellent avalanche properties, so simple seed + round works perfectly
+        const roundRng = new Mulberry32(this.seed + currentRound);
         const shuffled = roundRng.shuffle(this.players);
         return shuffled.slice(0, playersPerRound);
     }
@@ -254,7 +265,7 @@ export class Tournament {
      */
     applySmartRandomization(rankedPlayers, currentRound) {
         // Create round-specific RNG for deterministic behavior
-        const roundRng = new SeededRandom(this.seed + currentRound + 1000);
+        const roundRng = new Mulberry32(this.seed + currentRound + 1000);
 
         const result = [...rankedPlayers];
         const numCourts = Math.floor(rankedPlayers.length / 4);
@@ -454,3 +465,6 @@ export class Tournament {
         return tournament;
     }
 }
+
+// Export for testing
+export { Mulberry32 };

@@ -1628,5 +1628,183 @@ export function runTournamentTests() {
         );
     });
 
+    // ============================================================================
+    // RANDOM BENCHING STATISTICAL TESTS
+    // ============================================================================
+
+    runner.test('Random benching produces reasonable streak lengths over many rounds', () => {
+        const tournament = new Tournament({
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false,
+            benchingMode: 'random'
+        });
+
+        // Simulate 50 rounds and track benching streaks
+        const playerBenched = {};
+        tournament.players.forEach(p => playerBenched[p] = []);
+
+        for (let round = 0; round < 50; round++) {
+            const playingPlayers = new Set();
+            if (round < tournament.rounds.length) {
+                tournament.rounds[round].games.forEach(game => {
+                    game.team1.forEach(p => playingPlayers.add(p));
+                    game.team2.forEach(p => playingPlayers.add(p));
+                });
+            }
+
+            tournament.players.forEach(p => {
+                playerBenched[p].push(!playingPlayers.has(p));
+            });
+
+            if (round < tournament.rounds.length) {
+                tournament.rounds[round].games.forEach((game, idx) => {
+                    tournament.updateScore(round, idx, 10, 6);
+                });
+            }
+            if (round < 49) {
+                tournament.createNextRound();
+            }
+        }
+
+        // Calculate average streak length across all players
+        const allStreaks = [];
+        Object.values(playerBenched).forEach(benches => {
+            let currentStreak = 0;
+            benches.forEach(isBenched => {
+                if (isBenched) {
+                    currentStreak++;
+                } else {
+                    if (currentStreak > 0) {
+                        allStreaks.push(currentStreak);
+                    }
+                    currentStreak = 0;
+                }
+            });
+            if (currentStreak > 0) allStreaks.push(currentStreak);
+        });
+
+        const avgStreak = allStreaks.reduce((a, b) => a + b, 0) / allStreaks.length;
+
+        // Average streak should be reasonable (< 2.0 rounds for good randomness)
+        runner.assertTrue(
+            avgStreak < 2.0,
+            `Average streak should be < 2.0 rounds, got ${avgStreak.toFixed(2)}`
+        );
+
+        // Should have variety in streak lengths (not all the same)
+        const uniqueStreaks = new Set(allStreaks);
+        runner.assertTrue(
+            uniqueStreaks.size >= 3,
+            `Should have at least 3 different streak lengths, got ${uniqueStreaks.size}`
+        );
+    });
+
+    runner.test('Random benching distributes fairly over many rounds', () => {
+        const tournament = new Tournament({
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false,
+            benchingMode: 'random'
+        });
+
+        // Count benches per player over 40 rounds
+        const benchCounts = {};
+        tournament.players.forEach(p => benchCounts[p] = 0);
+
+        for (let round = 0; round < 40; round++) {
+            const playingPlayers = new Set();
+            if (round < tournament.rounds.length) {
+                tournament.rounds[round].games.forEach(game => {
+                    game.team1.forEach(p => playingPlayers.add(p));
+                    game.team2.forEach(p => playingPlayers.add(p));
+                });
+            }
+
+            tournament.players.forEach(p => {
+                if (!playingPlayers.has(p)) {
+                    benchCounts[p]++;
+                }
+            });
+
+            if (round < tournament.rounds.length) {
+                tournament.rounds[round].games.forEach((game, idx) => {
+                    tournament.updateScore(round, idx, 10, 6);
+                });
+            }
+            if (round < 39) {
+                tournament.createNextRound();
+            }
+        }
+
+        const counts = Object.values(benchCounts);
+        const avg = counts.reduce((a, b) => a + b, 0) / counts.length;
+        const min = Math.min(...counts);
+        const max = Math.max(...counts);
+
+        // All players should be benched roughly equally
+        // With 8 players, 4 per round, each player benched ~50% of time = ~20 times in 40 rounds
+        // Allow ±5 variance
+        runner.assertTrue(
+            max - min <= 10,
+            `Bench count range should be ≤ 10, got ${max - min} (min: ${min}, max: ${max}, avg: ${avg.toFixed(1)})`
+        );
+    });
+
+    runner.test('Random benching produces single-round streaks (regression test)', () => {
+        const tournament = new Tournament({
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false,
+            benchingMode: 'random'
+        });
+
+        // Track benching over 30 rounds
+        const playerBenched = {};
+        tournament.players.forEach(p => playerBenched[p] = []);
+
+        for (let round = 0; round < 30; round++) {
+            const playingPlayers = new Set();
+            if (round < tournament.rounds.length) {
+                tournament.rounds[round].games.forEach(game => {
+                    game.team1.forEach(p => playingPlayers.add(p));
+                    game.team2.forEach(p => playingPlayers.add(p));
+                });
+            }
+
+            tournament.players.forEach(p => {
+                playerBenched[p].push(!playingPlayers.has(p));
+            });
+
+            if (round < tournament.rounds.length) {
+                tournament.rounds[round].games.forEach((game, idx) => {
+                    tournament.updateScore(round, idx, 10, 6);
+                });
+            }
+            if (round < 29) {
+                tournament.createNextRound();
+            }
+        }
+
+        // Check for single-round streaks
+        let hasSingleRoundStreak = false;
+        Object.values(playerBenched).forEach(benches => {
+            for (let i = 0; i < benches.length; i++) {
+                if (benches[i] && (!benches[i-1] || i === 0) && (!benches[i+1] || i === benches.length - 1)) {
+                    hasSingleRoundStreak = true;
+                    break;
+                }
+            }
+        });
+
+        runner.assertTrue(
+            hasSingleRoundStreak,
+            'Should have at least one single-round benching streak (was broken with LCG)'
+        );
+    });
+
     return runner;
 }

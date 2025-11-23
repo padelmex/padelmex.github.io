@@ -136,38 +136,6 @@ export default {
             </label>
           </section>
 
-          <!-- Benching Mode -->
-          <section class="config__section">
-            <h2 class="config__section-title">Benching Mode</h2>
-            <div class="config__radio-group">
-              <label class="config__radio-label">
-                <input
-                  type="radio"
-                  name="benching"
-                  value="round-robin"
-                  v-model="benchingMode"
-                  class="config__radio"
-                  :disabled="waitingCount === 0"
-                >
-                <span class="config__radio-text">Round Robin - Players bench in fixed rotation order. Recommended</span>
-              </label>
-              <label class="config__radio-label">
-                <input
-                  type="radio"
-                  name="benching"
-                  value="random"
-                  v-model="benchingMode"
-                  class="config__radio"
-                  :disabled="waitingCount === 0"
-                >
-                <span class="config__radio-text">Random - Players selected randomly each round</span>
-              </label>
-            </div>
-            <div v-if="waitingCount === 0" class="section-note">
-              Benching mode is only needed when there are more players than seats.
-            </div>
-          </section>
-
           <!-- Create Button -->
           <div class="config__actions">
             <button
@@ -273,7 +241,6 @@ export default {
             courts: [],
             newCourt: "",
             randomize: false,
-            benchingMode: 'round-robin',
         };
     },
     computed: {
@@ -369,7 +336,6 @@ export default {
                 players: [...this.players],
                 courts: [...this.courts],
                 randomize: this.randomize,
-                benchingMode: this.benchingMode,
             });
 
             store.createTournament();
@@ -380,7 +346,6 @@ export default {
                 players: this.players,
                 courts: this.courts,
                 randomize: this.randomize,
-                benchingMode: this.benchingMode,
             }));
 
             // View change is handled by store.createTournament() above
@@ -402,7 +367,6 @@ export default {
             ];
             this.pointsPerMatch = 16;
             this.randomize = true;
-            this.benchingMode = 'round-robin';
         }
     }
 };

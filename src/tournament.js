@@ -97,16 +97,6 @@ export class Tournament {
         if (typeof config.randomize !== 'boolean') {
             throw new Error('Randomize must be a boolean');
         }
-
-        // Validate benchingMode
-        if (config.benchingMode !== undefined) {
-            if (typeof config.benchingMode !== 'string') {
-                throw new Error('Benching mode must be a string');
-            }
-            if (!['round-robin', 'random'].includes(config.benchingMode)) {
-                throw new Error('Benching mode must be either "round-robin" or "random"');
-            }
-        }
     }
 
     /**
@@ -115,7 +105,6 @@ export class Tournament {
      * @param {Array<string>} config.courts - Court names
      * @param {number} config.pointsPerMatch - Total points per match
      * @param {boolean} config.randomize - Whether to randomize teams
-     * @param {string} config.benchingMode - Benching mode: 'round-robin' or 'random' (default: 'round-robin')
      */
     constructor(config) {
         // Validate configuration
@@ -125,13 +114,9 @@ export class Tournament {
         this.courts = [...config.courts];
         this.pointsPerMatch = config.pointsPerMatch;
         this.randomize = config.randomize;
-        this.benchingMode = config.benchingMode || 'round-robin';
 
         // Calculate seed for deterministic behavior
         this.seed = this.calculateSeed();
-
-        // Create bench rotation order for round-robin benching
-        this.benchRotation = [...this.players];
 
         /**
          * @type {Array<{games: Array<{court: string, team1: Array<string>, team2: Array<string>, score1: number|null, score2: number|null}>}>}
@@ -154,7 +139,7 @@ export class Tournament {
     }
 
     /**
-     * Get players who should play next based on benching mode
+     * Get players who should play next using round-robin rotation
      */
     getPlayersForNextRound() {
         const currentRound = this.rounds.length;
@@ -165,19 +150,7 @@ export class Tournament {
             return [...this.players];
         }
 
-        if (this.benchingMode === 'round-robin') {
-            // Round-robin: Fixed rotation order
-            return this.getRoundRobinPlayers(currentRound, playersPerRound);
-        } else {
-            // Random: Seeded random selection
-            return this.getRandomPlayers(currentRound, playersPerRound);
-        }
-    }
-
-    /**
-     * Get players for round-robin benching (fixed order rotation)
-     */
-    getRoundRobinPlayers(currentRound, playersPerRound) {
+        // Round-robin: Fixed rotation order
         const numBenched = this.players.length - playersPerRound;
         const benchStartIndex = (currentRound * numBenched) % this.players.length;
 
@@ -187,19 +160,8 @@ export class Tournament {
             benchedIndices.add((benchStartIndex + i) % this.players.length);
         }
 
-        // Return players not benched (in bench rotation order)
-        return this.benchRotation.filter((player, index) => !benchedIndices.has(index));
-    }
-
-    /**
-     * Get players for random benching (seeded random selection)
-     */
-    getRandomPlayers(currentRound, playersPerRound) {
-        // Create a round-specific RNG for deterministic benching
-        // Mulberry32 has excellent avalanche properties, so simple seed + round works perfectly
-        const roundRng = new Mulberry32(this.seed + currentRound);
-        const shuffled = roundRng.shuffle(this.players);
-        return shuffled.slice(0, playersPerRound);
+        // Return players not benched
+        return this.players.filter((player, index) => !benchedIndices.has(index));
     }
 
     /**
@@ -433,8 +395,6 @@ export class Tournament {
             courts: this.courts,
             pointsPerMatch: this.pointsPerMatch,
             randomize: this.randomize,
-            benchingMode: this.benchingMode,
-            benchRotation: this.benchRotation,
             rounds: this.rounds
         };
     }
@@ -447,20 +407,14 @@ export class Tournament {
             players: data.players,
             courts: data.courts,
             pointsPerMatch: data.pointsPerMatch,
-            randomize: data.randomize,
-            benchingMode: data.benchingMode || 'round-robin'
+            randomize: data.randomize
         });
 
         // Clear the auto-generated first round
         tournament.rounds = [];
 
-        // Restore rounds and bench rotation
+        // Restore rounds
         tournament.rounds = data.rounds;
-
-        // Restore benchRotation if available (for backward compatibility)
-        if (data.benchRotation) {
-            tournament.benchRotation = data.benchRotation;
-        }
 
         return tournament;
     }

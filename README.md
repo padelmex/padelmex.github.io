@@ -8,7 +8,7 @@ A Progressive Web App for organizing and managing Padel Mexicano tournaments. Th
 - **Smart Pairing**: Automatic team pairing based on leaderboard rankings
 - **Score Tracking**: Track scores for each game with real-time updates
 - **Live Leaderboard**: View player standings with points, wins, losses, and games played
-- **Benching Modes**: Support for round-robin or random benching when you have more players than court capacity
+- **Round-Robin Benching**: Fair rotation for players when you have more players than court capacity
 - **Randomization**: Optional deterministic randomization to prevent repetitive pairings
 - **Offline Support**: Works completely offline after initial load with service worker caching
 - **Mobile-First**: Responsive design optimized for mobile devices
@@ -107,19 +107,15 @@ paddle-mexican/
 
 ### Tournament Logic
 
-1. **Setup Phase**: Configure players, courts, points per match, and benching mode
+1. **Setup Phase**: Configure players, courts, and points per match
 2. **Round Generation**:
    - First round uses initial player order
    - Subsequent rounds pair players based on leaderboard rankings
    - Optional randomization prevents repetitive pairings while maintaining competitive balance
-3. **Score Tracking**: Enter scores for each game as they complete
-4. **Leaderboard**: Players ranked by total points, then games played, then alphabetically
-5. **Next Round**: Once all games complete, advance to the next round with updated pairings
-
-### Benching Modes
-
-- **Round-robin**: Players bench in a fixed rotation order, ensuring everyone benches equally
-- **Random**: Seeded random selection for benching (deterministic for consistency)
+3. **Benching**: When there are more players than court capacity, players bench in a fixed round-robin rotation to ensure fairness
+4. **Score Tracking**: Enter scores for each game as they complete
+5. **Leaderboard**: Players ranked by total points, then games played, then alphabetically
+6. **Next Round**: Once all games complete, advance to the next round with updated pairings
 
 ## Browser Requirements
 

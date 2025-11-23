@@ -229,8 +229,7 @@ export default {
                 players: store.state.players,
                 courts: store.state.courts,
                 pointsPerMatch: store.state.pointsPerMatch,
-                randomize: store.state.randomize,
-                benchingMode: store.state.benchingMode
+                randomize: store.state.randomize
             });
             this.saveTournament();
         },

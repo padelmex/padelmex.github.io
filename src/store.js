@@ -18,10 +18,6 @@ const state = reactive({
      */
     randomize: false,
     /**
-     * @type {string}
-     */
-    benchingMode: 'round-robin',
-    /**
      * @type {boolean}
      */
     tournamentCreated: false,
@@ -62,7 +58,6 @@ export const store = {
             state.players = [];
             state.courts = [];
             state.randomize = false;
-            state.benchingMode = 'round-robin';
             state.tournamentCreated = false;
             state.matches = [];
             state.currentView = 'setup';

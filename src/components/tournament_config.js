@@ -80,7 +80,7 @@ export default {
                   type="text"
                   class="config__input"
                   placeholder="Player name"
-                  @keydown.enter.prevent="addPlayer"
+                  @keydown.enter.prevent="addPlayer(true)"
                 >
                 <button @click="removePlayer(index)" class="config__remove-btn">×</button>
               </div>
@@ -90,8 +90,8 @@ export default {
                   type="text"
                   class="config__input config__input--new"
                   placeholder="Add player..."
-                  @keydown.enter.prevent="addPlayer"
-                  @blur="addPlayer"
+                  @keydown.enter.prevent="addPlayer(true)"
+                  @blur="addPlayer(false)"
                   ref="playerInput"
                 >
               </div>
@@ -114,7 +114,7 @@ export default {
                   type="text"
                   class="config__input"
                   placeholder="Court name"
-                  @keydown.enter.prevent="addCourt"
+                  @keydown.enter.prevent="addCourt(true)"
                 >
                 <button @click="removeCourt(index)" class="config__remove-btn">×</button>
               </div>
@@ -124,8 +124,8 @@ export default {
                   type="text"
                   class="config__input config__input--new"
                   placeholder="Add court..."
-                  @keydown.enter.prevent="addCourt"
-                  @blur="addCourt"
+                  @keydown.enter.prevent="addCourt(true)"
+                  @blur="addCourt(false)"
                   ref="courtInput"
                 >
               </div>
@@ -151,18 +151,19 @@ export default {
           <!-- Create / Save Button -->
           <div class="config__actions">
             <button
+              @mousedown.prevent
               @click="submit"
               class="button-primary button-large"
               :disabled="!canCreate"
             >
               {{ isEditing ? 'Save changes' : 'Create Tournament' }}
             </button>
-            <div v-if="validationError" class="config__button-hint">
+            <div v-if="validationError" class="button-hint">
               {{ validationError }}
             </div>
-            <div v-else-if="seatingSummary" class="config__button-info">
+            <div v-else-if="seatingSummary" class="button-info">
               {{ seatingSummary }}
-              <span v-if="tooManyWaiting" class="config__button-info--warning">
+              <span v-if="tooManyWaiting" class="button-info--warning">
                 Consider adding more courts.
               </span>
             </div>
@@ -278,17 +279,29 @@ export default {
         isEditing() {
             return store.state.tournamentCreated;
         },
+        /**
+         * A name still sitting in the add box has been typed in, so everything the
+         * user is shown - the summary, the validation, the button - counts it. It is
+         * committed to the list on submit or on blur.
+         */
+        effectivePlayers() {
+            return this.withPending(this.players, this.newPlayer);
+        },
+        effectiveCourts() {
+            return this.withPending(this.courts, this.newCourt);
+        },
         seating() {
-            return computeSeating(this.players.length, this.courts.length);
+            return computeSeating(this.effectivePlayers.length, this.effectiveCourts.length);
         },
         waitingCount() {
-            return this.players.length - this.seating.seated;
+            return this.effectivePlayers.length - this.seating.seated;
         },
         tooManyWaiting() {
             return this.waitingCount > this.seating.seated;
         },
         seatingSummary() {
             const {seated, courtsUsed, trios} = this.seating;
+            const courtCount = this.effectiveCourts.length;
             if (seated === 0) return null;
 
             const courtWord = courtsUsed === 1 ? 'court' : 'courts';
@@ -302,7 +315,7 @@ export default {
                 summary += ` · ${trios} ${gameWord} with 3 players (1 vs 2)`;
             }
 
-            const idleCourts = this.courts.length - courtsUsed;
+            const idleCourts = courtCount - courtsUsed;
             if (idleCourts > 0) {
                 summary += ` · ${idleCourts} ${idleCourts === 1 ? 'court' : 'courts'} idle`;
             }
@@ -310,36 +323,39 @@ export default {
             return summary + '.';
         },
         validationError() {
-            if (this.players.length === 0) {
+            const players = this.effectivePlayers;
+            const courts = this.effectiveCourts;
+
+            if (players.length === 0) {
                 return "No players entered. Add at least one player to start.";
             }
-            if (this.courts.length === 0) {
+            if (courts.length === 0) {
                 return "No courts created. Add at least one court to start.";
             }
-            if (this.players.length < MIN_PLAYERS) {
-                const missing = MIN_PLAYERS - this.players.length;
+            if (players.length < MIN_PLAYERS) {
+                const missing = MIN_PLAYERS - players.length;
                 return `Not enough players. You need at least ${MIN_PLAYERS} for a game (${missing} more needed).`;
             }
             if (this.pointsPerMatch === 0 && (!this.customPoints || this.customPoints < 1)) {
                 return "Enter valid points per match (must be greater than 0).";
             }
             // Check for empty player names
-            if (this.players.some(p => !p.trim())) {
+            if (players.some(p => !p.trim())) {
                 return "All players must have names. Remove empty entries or add names.";
             }
             // Check for duplicate player names
-            const playerNames = this.players.map(p => p.trim().toLowerCase());
-            if (new Set(playerNames).size !== playerNames.length) {
-                return "Player names must be unique. Some players have the same name.";
+            const duplicatePlayer = this.firstDuplicate(players);
+            if (duplicatePlayer) {
+                return `Two players are both called "${duplicatePlayer}". Names must be unique.`;
             }
             // Check for empty court names
-            if (this.courts.some(c => !c.trim())) {
+            if (courts.some(c => !c.trim())) {
                 return "All courts must have names. Remove empty entries or add names.";
             }
             // Check for duplicate court names
-            const courtNames = this.courts.map(c => c.trim().toLowerCase());
-            if (new Set(courtNames).size !== courtNames.length) {
-                return "Court names must be unique. Some courts have the same name.";
+            const duplicateCourt = this.firstDuplicate(courts);
+            if (duplicateCourt) {
+                return `Two courts are both called "${duplicateCourt}". Names must be unique.`;
             }
             return null;
         },
@@ -348,6 +364,26 @@ export default {
         }
     },
     methods: {
+        /**
+         * The first name that appears twice, compared the way the tournament does it
+         * @param {Array<string>} names
+         * @returns {string|null}
+         */
+        withPending(committed, pending) {
+            const extra = pending.trim();
+            return extra ? [...committed, extra] : committed;
+        },
+
+        firstDuplicate(names) {
+            const seen = new Set();
+            for (const name of names) {
+                const key = name.trim().toLowerCase();
+                if (seen.has(key)) return name.trim();
+                seen.add(key);
+            }
+            return null;
+        },
+
         handleCustomPoints() {
             if (this.customPoints !== null && this.customPoints !== "") {
                 this.pointsPerMatch = 0;
@@ -360,25 +396,34 @@ export default {
                 }
             });
         },
-        addPlayer() {
+        /**
+         * @param {boolean} keepFocus - true when Enter asked for another name. A name
+         *   committed on blur must not pull the focus back: the user tapped away, and
+         *   on a phone that means their next keystrokes land in the wrong field.
+         */
+        addPlayer(keepFocus = false) {
             if (this.newPlayer.trim()) {
                 this.players.push(this.newPlayer.trim());
                 this.newPlayer = "";
-                this.$nextTick(() => {
-                    this.$refs.playerInput.focus();
-                });
+                if (keepFocus) {
+                    this.$nextTick(() => {
+                        this.$refs.playerInput.focus();
+                    });
+                }
             }
         },
         removePlayer(index) {
             this.players.splice(index, 1);
         },
-        addCourt() {
+        addCourt(keepFocus = false) {
             if (this.newCourt.trim()) {
                 this.courts.push(this.newCourt.trim());
                 this.newCourt = "";
-                this.$nextTick(() => {
-                    this.$refs.courtInput.focus();
-                });
+                if (keepFocus) {
+                    this.$nextTick(() => {
+                        this.$refs.courtInput.focus();
+                    });
+                }
             }
         },
         removeCourt(index) {
@@ -389,7 +434,13 @@ export default {
             store.goToTournament();
         },
         submit() {
+            // A name still sitting in the add box counts as typed in - the tap that
+            // gets here is the user saying they are done.
+            this.addPlayer();
+            this.addCourt();
+
             if (!this.canCreate) return;
+            if (!this.confirmRosterChange()) return;
 
             const finalPoints = this.pointsPerMatch === 0 ? this.customPoints : this.pointsPerMatch;
 
@@ -403,6 +454,33 @@ export default {
             store.markConfigDirty();
             store.goToTournament();
         },
+        /**
+         * A roster edit that takes exactly one name out and puts one name in is almost
+         * always a spelling correction - and that is the one edit the app cannot read
+         * as such: points are held against the name, so the old name keeps them and
+         * the new one starts at zero. Ask before letting that happen silently.
+         *
+         * @returns {boolean} whether to go ahead with the save
+         */
+        confirmRosterChange() {
+            if (!this.isEditing) return true;
+
+            const before = store.state.players.map(p => p.trim());
+            const after = this.players.map(p => p.trim());
+
+            const removed = before.filter(name => !after.includes(name));
+            const added = after.filter(name => !before.includes(name));
+
+            if (removed.length !== 1 || added.length !== 1) return true;
+
+            return confirm(
+                `"${removed[0]}" is leaving the tournament and "${added[0]}" is joining it.\n\n` +
+                `If you meant to correct a spelling, cancel: points belong to the name that ` +
+                `scored them, so "${removed[0]}" would keep every point and "${added[0]}" ` +
+                `would start from zero.`
+            );
+        },
+
         fillDummyData() {
             this.players = [
                 'Nikita',

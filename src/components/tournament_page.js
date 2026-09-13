@@ -1,13 +1,18 @@
 import { Tournament } from '../tournament.js';
 import { store, TOURNAMENT_DATA_KEY } from '../store.js';
 
+/**
+ * Where unreadable saved data is parked instead of being overwritten
+ */
+const CORRUPT_DATA_KEY = 'tournament-data-broken';
+
 export default {
     template: `
         <div class="tournament-page">
             <template v-if="isLeaderboard">
                 <div class="tournament-page__header">
                     <h1>Leaderboard</h1>
-                    <button class="button-with-border" @click="closeLeaderboard">Close</button>
+                    <button class="button-with-border button-small" @click="closeLeaderboard">Close</button>
                 </div>
                 <div class="leaderboard">
                     <table class="leaderboard__table">
@@ -44,9 +49,17 @@ export default {
                 <div class="tournament-page__header">
                     <h1>Tournament</h1>
                     <div class="tournament-page__actions">
-                        <button type="button" class="link-action" @click="goToSetup">Edit</button>
-                        <button type="button" class="link-action link-danger" @click="confirmReset">Reset</button>
+                        <button type="button" class="link-action" @click="goToSetup">
+                            <span class="link-action__label">Edit</span>
+                        </button>
+                        <button type="button" class="link-action link-danger" @click="confirmReset">
+                            <span class="link-action__label">Reset</span>
+                        </button>
                     </div>
+                </div>
+
+                <div v-if="restoreNotice" class="button-hint">
+                    {{ restoreNotice }}
                 </div>
 
                 <div v-if="tournament" class="rounds-container">
@@ -86,13 +99,14 @@ export default {
                                             class="game__score"
                                             :class="{ 'game__score--warning': !!getScoreWarning(roundIndex, gameIndex) }"
                                             v-model.number="game.score1"
+                                            :aria-label="scoreLabel(game, 1)"
                                             @blur="onScoreBlur(roundIndex, gameIndex)"
                                             @input="onScoreInput(roundIndex, gameIndex)"
                                             @keydown.enter.prevent="focusNextScore"
                                             :disabled="isRoundFrozen(roundIndex)"
                                             min="0"
                                             step="1"
-                                            placeholder="0"
+                                            placeholder="–"
                                             inputmode="numeric"
                                             autocomplete="off"
                                             enterkeyhint="next"
@@ -107,13 +121,14 @@ export default {
                                             class="game__score"
                                             :class="{ 'game__score--warning': !!getScoreWarning(roundIndex, gameIndex) }"
                                             v-model.number="game.score2"
+                                            :aria-label="scoreLabel(game, 2)"
                                             @blur="onScoreBlur(roundIndex, gameIndex)"
                                             @input="onScoreInput(roundIndex, gameIndex)"
                                             @keydown.enter.prevent="focusNextScore"
                                             :disabled="isRoundFrozen(roundIndex)"
                                             min="0"
                                             step="1"
-                                            placeholder="0"
+                                            placeholder="–"
                                             inputmode="numeric"
                                             autocomplete="off"
                                             :enterkeyhint="isLastGame(round, gameIndex) ? 'done' : 'next'"
@@ -148,19 +163,23 @@ export default {
 
                             <div
                                 v-if="configNotice && roundIndex === tournament.rounds.length - 1"
-                                class="section-note"
+                                class="button-info"
                             >
                                 {{ configNotice }}
                             </div>
 
-                            <button
-                                v-if="roundIndex === tournament.rounds.length - 1"
-                                type="submit"
-                                class="button-primary button-large round__save-button"
-                                :disabled="!canCreateNextRound"
-                            >
-                                Save Round
-                            </button>
+                            <template v-if="roundIndex === tournament.rounds.length - 1">
+                                <button
+                                    type="submit"
+                                    class="button-primary button-large round__save-button"
+                                    :disabled="!canCreateNextRound"
+                                >
+                                    Save Round
+                                </button>
+                                <div v-if="saveBlockedReason" class="button-info">
+                                    {{ saveBlockedReason }}
+                                </div>
+                            </template>
                         </form>
                     </div>
 
@@ -184,7 +203,8 @@ export default {
             scoreErrors: {},
             scoreWarnings: {},
             leaderboard: [],
-            configNotice: null
+            configNotice: null,
+            restoreNotice: null
         };
     },
 
@@ -215,10 +235,44 @@ export default {
             return lastRound.games.every(game =>
                 this.hasScore(game.score1) && this.hasScore(game.score2)
             );
+        },
+
+        /**
+         * A disabled button with no explanation is the commonest way to strand
+         * someone, so the round says what it is still waiting for.
+         */
+        saveBlockedReason() {
+            if (!this.tournament || this.canCreateNextRound) return null;
+
+            const lastRoundIndex = this.tournament.rounds.length - 1;
+            const hasErrors = Object.keys(this.scoreErrors).some(key =>
+                key.startsWith(lastRoundIndex + '-')
+            );
+            if (hasErrors) {
+                return 'Fix the score marked in red to save this round.';
+            }
+
+            const missing = this.tournament.rounds[lastRoundIndex].games.filter(game =>
+                !this.hasScore(game.score1) || !this.hasScore(game.score2)
+            ).length;
+            if (missing === 0) return null;
+
+            return missing === 1
+                ? 'One game still needs both its scores before the round can be saved.'
+                : `${missing} games still need their scores before the round can be saved.`;
         }
     },
 
     methods: {
+        /**
+         * Score boxes carry no visible label of their own - the names beside them do
+         * the work visually, but a screen reader reads the box on its own.
+         */
+        scoreLabel(game, team) {
+            const players = team === 1 ? game.team1 : game.team2;
+            return `Score for ${players.join(' and ')} on ${game.court}`;
+        },
+
         hasScore(value) {
             return value !== null && value !== undefined && value !== '' && !isNaN(value);
         },
@@ -250,10 +304,26 @@ export default {
                     this.tournament = Tournament.fromJSON(JSON.parse(savedData));
                 } catch (e) {
                     console.error('Failed to restore tournament:', e);
+                    // Starting over is the only option, but the unreadable data is the
+                    // only copy of the session that exists - keep it and say so, rather
+                    // than overwriting it with a fresh tournament in silence.
+                    this.keepCorruptedData(savedData);
                     this.createNewTournament();
+                    this.restoreNotice =
+                        'The saved tournament could not be read, so a new one has been started. ' +
+                        'The unreadable data has been kept in this browser under ' +
+                        '"tournament-data-broken" in case it can be recovered.';
                 }
             } else {
                 this.createNewTournament();
+            }
+        },
+
+        keepCorruptedData(raw) {
+            try {
+                localStorage.setItem(CORRUPT_DATA_KEY, raw);
+            } catch (e) {
+                console.error('Could not keep a copy of the unreadable tournament:', e);
             }
         },
 
@@ -447,7 +517,16 @@ export default {
         },
 
         undoLastRound() {
-            if (!confirm('Are you sure you want to undo Round ' + this.tournament.rounds.length + '? This cannot be undone.')) {
+            const roundNumber = this.tournament.rounds.length;
+            const scored = this.tournament.roundHasScores(roundNumber - 1);
+
+            if (!confirm(
+                'Remove Round ' + roundNumber + ' so that Round ' + (roundNumber - 1) + ' can be edited again?\n\n' +
+                (scored
+                    ? 'The scores already entered into Round ' + roundNumber + ' will be lost.\n'
+                    : '') +
+                'This cannot be undone.'
+            )) {
                 return;
             }
 
@@ -455,6 +534,8 @@ export default {
                 const removedIndex = this.tournament.rounds.length - 1;
                 this.tournament.undoLastRound();
                 this.saveTournament();
+                // The notice names a round that has just stopped existing
+                this.configNotice = null;
 
                 // Clear any messages for the removed round
                 [this.scoreErrors, this.scoreWarnings].forEach(messages => {

@@ -1,9 +1,18 @@
 import { runTournamentTests } from './tournament.test.js';
+import { runMatchmakingTests } from './matchmaking.test.js';
+import { runAllTests as runMulberryTests } from './mulberry32.test.js';
 
 async function main() {
     console.log('\n🏓 Running Paddle Tournament Tests...\n');
 
     const runner = runTournamentTests();
+    runMatchmakingTests().tests.forEach(test => runner.test(test.name, test.fn));
+    runner.test('Mulberry32 statistical properties', () => {
+        if (!runMulberryTests()) {
+            throw new Error('Mulberry32 suite reported a failure - see output above');
+        }
+    });
+
     const results = await runner.run();
     const summary = runner.getSummary();
 

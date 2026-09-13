@@ -143,6 +143,7 @@ export default {
               >
               <span class="config__checkbox-text">
                 Mix up pairings to make games less predictable
+                <small>(Recommended)</small>
               </span>
             </label>
           </section>
@@ -251,7 +252,7 @@ export default {
             newPlayer: "",
             courts: [],
             newCourt: "",
-            randomize: false,
+            randomize: true,
             minPlayers: MIN_PLAYERS,
         };
     },

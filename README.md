@@ -11,7 +11,7 @@ A Progressive Web App for organizing and managing Padel Mexicano tournaments. Th
 - **Any Number of Players**: Courts of three (1 vs 2) when you are short of a full four, with a fair rotation of who plays alone
 - **Fair Rotation**: When there are more players than court seats, rest rounds are spread so games played stay within one of each other
 - **Editable Mid-Tournament**: Add or remove players and courts without losing a single score
-- **Randomization**: Optional deterministic randomization to prevent repetitive pairings
+- **Randomization**: On by default — alternates between the two closest ways to split a court, for more even games and more varied partners. Seeded, so draws stay reproducible
 - **Offline Support**: Works completely offline after initial load with service worker caching
 - **Mobile-First**: Responsive design optimized for mobile devices
 - **Local Storage**: All tournament data stays in your browser - no data sent to servers
@@ -112,7 +112,7 @@ paddle-mexican/
 2. **Round Generation**:
    - First round uses the order players were entered
    - Later rounds rank everyone by points and fill courts from the top, pairing `1 & 3 vs 2 & 4`
-   - Optional randomization varies partners within a court without disturbing the ladder
+   - Randomization (on by default) alternates between `1 & 3 vs 2 & 4` and `1 & 4 vs 2 & 3` within a court, without disturbing the ladder
 3. **Seating**: Courts of three (1 vs 2) are used whenever that lets everyone play; when
    there are more players than seats, the players with the most games rest
 4. **Score Tracking**: Enter scores as games finish. A total that doesn't match the target is

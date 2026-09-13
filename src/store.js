@@ -2,6 +2,13 @@ import {reactive} from 'vue';
 
 const DEFAULT_POINTS_PER_MATCH = 16;
 
+/**
+ * Mixing pairings is on by default: it produces more even games than the strict
+ * ranking does, and it is the only thing that stops a four-player session
+ * replaying the same two teams. See docs/randomization.md.
+ */
+const DEFAULT_RANDOMIZE = true;
+
 export const TOURNAMENT_DATA_KEY = 'tournament-data';
 export const TOURNAMENT_CONFIG_KEY = 'tournament-config';
 
@@ -14,7 +21,7 @@ const defaults = () => ({
     pointsPerMatch: DEFAULT_POINTS_PER_MATCH,
     players: [],
     courts: [],
-    randomize: false,
+    randomize: DEFAULT_RANDOMIZE,
     tournamentCreated: false,
     configDirty: false,
     currentView: 'setup',
@@ -36,7 +43,7 @@ const state = reactive({
     /**
      * @type {boolean}
      */
-    randomize: false,
+    randomize: DEFAULT_RANDOMIZE,
     /**
      * Whether a tournament is currently running
      * @type {boolean}
@@ -106,7 +113,11 @@ export const store = {
                 : DEFAULT_POINTS_PER_MATCH;
             state.players = Array.isArray(config.players) ? config.players : [];
             state.courts = Array.isArray(config.courts) ? config.courts : [];
-            state.randomize = config.randomize === true;
+            // A saved config from before this field existed has no opinion, so it
+            // takes the current default rather than being forced off.
+            state.randomize = typeof config.randomize === 'boolean'
+                ? config.randomize
+                : DEFAULT_RANDOMIZE;
         } catch (e) {
             console.error('Failed to restore tournament config:', e);
         }

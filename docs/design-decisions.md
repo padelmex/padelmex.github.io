@@ -167,3 +167,45 @@ setup entry on load even when the app opens straight into a running tournament.
 **Rejected.** Pushing a new entry in both directions, which works but grows the stack so Back
 ping-pongs. Keeping the leaderboard as a local flag inside the tournament screen, which
 leaves the back gesture doing the wrong thing on the one screen people open most.
+
+---
+
+## 11. Randomize teams is on by default, and the cross-side swap is gone
+
+**Decision.** *Randomize teams* ships checked, labelled *(Recommended)*. The shuffle itself
+was cut down to two coin-flips per court of four; the third move — an occasional swap across
+the two sides — was deleted.
+
+**Why.** Measuring it contradicted the assumption it had been built on. The shuffle was
+treated as trading balance away for variety, so it defaulted off. It does not. A court of
+four has three possible splits, and the strict ranking's `1 & 3 v 2 & 4` is not the closest
+of them — `1 & 4 v 2 & 3` is level on an evenly spaced ladder. Alternating between those two
+**halves** the average gap between sides (2.00 to 1.01) while also improving partner
+variety. It is better on both axes at once.
+
+It also fixes a genuine degenerate case: four players on one court reach only four of the
+six possible partnerships under the strict ranking, and two people never partner all
+session. That is a common real setup, not an edge case.
+
+Rest rounds and 1 v 2 turns are unaffected — seating is decided before the shuffle runs, and
+bench spread is identical between the two modes in all 77 benchmark cells.
+
+**The cross-side swap** was the only route to the third split, `1 & 2 v 3 & 4`, which stacks
+the top two against the bottom two. Sweeping its probability from 0 to 1 showed it made
+balance monotonically worse and, past about 0.3, variety worse too. It was paying for
+nothing, so it is deleted rather than tuned down. Full sweep in
+[randomization.md](randomization.md).
+
+**Rejected.** *Leaving it off and documenting the four-player problem* — a default that is
+worse for every measured configuration is not worth preserving for familiarity. *Removing
+the checkbox* — an organiser running a seeded ladder has a real reason to want the strict
+ranking. *Rotating all three splits deterministically* — reaches every partnership, but
+spends a third of all games on the most lopsided split.
+
+**Costs.** Sixteen players on four courts see a slightly worse worst-case partner repeat
+(4.30 to 4.77): a strict ranking spreads partners systematically, a shuffle occasionally
+repeats by luck. A saved config from before this change keeps whatever it had, so returning
+users are not switched over behind their backs.
+
+**Contract unchanged.** The shuffle is still seeded, so undo and re-save still reproduce a
+round exactly.

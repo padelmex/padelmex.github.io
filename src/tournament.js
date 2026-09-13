@@ -444,22 +444,25 @@ export class Tournament {
 
         for (const size of groupSizes) {
             if (size === 4) {
-                // Randomly swap within pairs to create variety
-                // Swap positions 0 and 1 (team 1)
+                // Teams are taken as positions 0 & 2 against 1 & 3, so there are only
+                // three ways to split a court: 1&3 v 2&4, 1&4 v 2&3, and 1&2 v 3&4.
+                // These two independent swaps pick evenly between the first two and
+                // never produce the third.
+                //
+                // That is deliberate. 1&4 v 2&3 is the *most* even split of a court -
+                // on an evenly spaced ladder the two sides are exactly equal - while
+                // 1&2 v 3&4 stacks the top two against the bottom two and is the most
+                // lopsided. Mixing the two balanced splits halves the average gap
+                // between sides compared with the strict ranking, and still reaches
+                // every partnership as the ladder moves underneath it.
+                //
+                // See docs/randomization.md for the measurements behind this.
                 if (roundRng.next() > 0.5) {
                     [result[startIdx], result[startIdx + 1]] = [result[startIdx + 1], result[startIdx]];
                 }
 
-                // Swap positions 2 and 3 (team 2)
                 if (roundRng.next() > 0.5) {
                     [result[startIdx + 2], result[startIdx + 3]] = [result[startIdx + 3], result[startIdx + 2]];
-                }
-
-                // Occasionally swap between teams (creates more variety)
-                if (roundRng.next() > 0.7) {
-                    const pos1 = startIdx + (roundRng.next() > 0.5 ? 0 : 1);
-                    const pos2 = startIdx + (roundRng.next() > 0.5 ? 2 : 3);
-                    [result[pos1], result[pos2]] = [result[pos2], result[pos1]];
                 }
             } else {
                 // On a court of three the other two are partners either way, so the
@@ -483,9 +486,12 @@ export class Tournament {
         const round = this.rounds[roundIndex];
         if (!round) return false;
 
+        // Must match what getLeaderboard() is willing to count. Checking only for
+        // null let undefined and NaN through, so a round could report itself
+        // complete while a game silently contributed nothing to anyone's total.
         return round.games.every(game =>
-            game.score1 !== null &&
-            game.score2 !== null
+            Number.isFinite(game.score1) &&
+            Number.isFinite(game.score2)
         );
     }
 
@@ -511,7 +517,16 @@ export class Tournament {
             throw new Error('Invalid round or game index');
         }
 
-        // Validate scores
+        // Validate scores. Design decision 8: a total that misses the target is the
+        // UI's business to flag, but a value that is not a whole count of points is
+        // refused here, so nothing that the leaderboard cannot add ever reaches a
+        // stored round.
+        if (!Number.isFinite(score1) || !Number.isFinite(score2)) {
+            throw new Error('Scores must be numbers');
+        }
+        if (!Number.isInteger(score1) || !Number.isInteger(score2)) {
+            throw new Error('Scores must be whole numbers');
+        }
         if (score1 < 0 || score2 < 0) {
             throw new Error('Scores cannot be negative');
         }

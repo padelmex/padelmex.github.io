@@ -33,22 +33,35 @@ or don't — it stops mattering after the first round.
    court, 5–8 to the second, and so on.
 4. On each court of four, the pairing is **1 & 3 against 2 & 4**.
 
-So the leaders play the leaders and the back of the field plays the back of the field. The
-`1 & 3 vs 2 & 4` split then makes each individual game as even as it can be: the court's
-strongest player is handed its third-strongest, against the second and fourth.
+So the leaders play the leaders and the back of the field plays the back of the field, and
+the `1 & 3 vs 2 & 4` split hands the court's strongest player its third-strongest, against
+the second and fourth.
+
+This is the Mexicano convention, and it is a close game — but it is not the closest one
+available. On an evenly spaced court, `1 & 4 vs 2 & 3` is dead level while `1 & 3 vs 2 & 4`
+leaves a gap of two ranks. Mixing the two is what *Randomize teams* does, which is why it is
+on by default.
 
 Courts of three work the same way but one player takes on the other two — see
 [player-counts.md](player-counts.md).
 
 ## Randomize teams
 
-Optional, off by default, and it only starts from round 2.
+**On by default**, and it only starts from round 2.
 
-With it on, the app shuffles *within* each court before pairing: it may swap the two
-players of a side, and occasionally swap one player across sides. It never moves anyone to
-a different court, so the ladder is untouched — you still play the people on your level,
-you just get a different partner out of them than the strict ranking would have given you.
-Use it for a long session where the same pairs would otherwise keep recurring.
+With it on, the app shuffles *within* each court before pairing, alternating evenly between
+the two closest splits of the court — `1 & 3 vs 2 & 4` and `1 & 4 vs 2 & 3`. It never moves
+anyone to a different court, so the ladder is untouched: you still play the people on your
+level, you just get a different partner out of them than the strict ranking would have
+given you.
+
+It is on by default because measuring it found it makes games **more** even rather than
+less, gives everyone more different partners, and costs nothing in rest or 1 v 2 fairness —
+those are decided before the shuffle runs. With four players on one court it is the only
+thing that stops two of the six possible partnerships never happening at all. The numbers
+are in [randomization.md](randomization.md).
+
+Turn it off if you want the strict ranking and nothing else.
 
 Randomization is seeded (see the determinism contract in
 [navigation-and-state.md](navigation-and-state.md)), so it is shuffled but not unrepeatable.

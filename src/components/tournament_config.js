@@ -1,11 +1,20 @@
 import {store} from "../store.js";
 import {config} from "../config.js";
+import {computeSeating, MIN_PLAYERS} from "../tournament.js";
 
 export default {
     template: `
       <div class="page">
         <header class="header">
-          <h1>Tournament Setup</h1>
+          <h1>{{ isEditing ? 'Edit Tournament' : 'Tournament Setup' }}</h1>
+          <button
+            v-if="isEditing"
+            type="button"
+            class="link-action"
+            @click="backToTournament"
+          >
+            Back
+          </button>
         </header>
         <main class="config">
 
@@ -88,7 +97,8 @@ export default {
               </div>
             </div>
             <div class="section-note">
-              Note: You can add more players than available seats.
+              Any number from {{ minPlayers }} up works. Too many for the courts and the
+              extras rest in turn; not a multiple of four and a court plays one against two.
             </div>
           </section>
 
@@ -116,6 +126,7 @@ export default {
                   placeholder="Add court..."
                   @keydown.enter.prevent="addCourt"
                   @blur="addCourt"
+                  ref="courtInput"
                 >
               </div>
             </div>
@@ -136,28 +147,27 @@ export default {
             </label>
           </section>
 
-          <!-- Create Button -->
+          <!-- Create / Save Button -->
           <div class="config__actions">
             <button
-              @click="createTournament"
+              @click="submit"
               class="button-primary button-large"
               :disabled="!canCreate"
             >
-              Create Tournament
+              {{ isEditing ? 'Save changes' : 'Create Tournament' }}
             </button>
             <div v-if="validationError" class="config__button-hint">
               {{ validationError }}
             </div>
-            <div v-if="!validationError && players.length > 0 && courts.length > 0 && playingCount > 0">
-              <div v-if="waitingCount > 0" class="config__button-info">
-                {{ playingCount }} player{{ playingCount !== 1 ? 's' : '' }} will play at the same time and {{ waitingCount }} will need to wait.
-                <span v-if="waitingCount > playingCount" class="config__button-info--warning">
-                  Consider adding more courts.
-                </span>
-              </div>
-              <div v-else class="config__button-info">
-                All {{ playingCount }} player{{ playingCount !== 1 ? 's' : '' }} will play at the same time.
-              </div>
+            <div v-else-if="seatingSummary" class="config__button-info">
+              {{ seatingSummary }}
+              <span v-if="tooManyWaiting" class="config__button-info--warning">
+                Consider adding more courts.
+              </span>
+            </div>
+            <div v-if="isEditing" class="section-note">
+              Rounds already played keep their scores. Changes apply to the current round
+              only while no score has been entered into it.
             </div>
           </div>
 
@@ -168,57 +178,58 @@ export default {
             <div class="config__info-block">
               <h4 class="config__info-subtitle">Overview</h4>
               <p class="config__info-text">
-                A Padel Mexicano tournament is a dynamic format where players compete in multiple rounds,
-                with pairings determined by current standings after each round. This ensures
-                competitive balance throughout the event, as players face opponents of similar skill level.
+                Nobody has a fixed partner. You play a short game, your points go on your own
+                tally, and the next round is drawn from the standings — so you end up playing
+                with and against people of roughly your own level, and the table stays tight
+                to the last round.
               </p>
             </div>
 
             <div class="config__info-block">
               <h4 class="config__info-subtitle">How It Works</h4>
               <ul class="config__info-list">
-                <li><strong>Round 1:</strong> Players are paired randomly (or by initial seeding)</li>
-                <li><strong>Subsequent Rounds:</strong> Players are ranked by total points scored</li>
-                <li><strong>Pairing:</strong> Top-ranked players compete against each other, ensuring balanced matches</li>
-                <li><strong>Partner Rotation:</strong> You play with different partners and against different opponents each round</li>
+                <li><strong>Round 1:</strong> uses the order you entered players in</li>
+                <li><strong>Later rounds:</strong> everyone is ranked by total points scored</li>
+                <li><strong>Pairing:</strong> courts fill from the top of the ranking, so the leaders play the leaders</li>
+                <li><strong>Partner rotation:</strong> you get a different partner and different opponents each round</li>
               </ul>
             </div>
 
             <div class="config__info-block">
               <h4 class="config__info-subtitle">Pairing Algorithm</h4>
               <p class="config__info-text">
-                After each round, players are sorted by their cumulative score. The algorithm pairs:
+                After each round players are sorted by their cumulative score, then walked
+                from the top filling one court at a time:
               </p>
               <ul class="config__info-list">
-                <li>Players ranked #1 and #2 vs. #3 and #4 (on Court 1)</li>
-                <li>Players ranked #5 and #6 vs. #7 and #8 (on Court 2)</li>
+                <li>Ranks #1 and #3 vs. #2 and #4 on the first court</li>
+                <li>Ranks #5 and #7 vs. #6 and #8 on the second court</li>
                 <li>And so on for all available courts</li>
               </ul>
               <p class="config__info-text">
-                This ensures that players with similar performance levels compete together, creating
-                exciting, competitive matches. If randomization is enabled, slight variations are
-                introduced to prevent predictable pairings.
+                Splitting each court 1 &amp; 3 against 2 &amp; 4 makes the individual game as
+                even as it can be. With randomization on, partners vary within a court without
+                disturbing the ladder.
               </p>
             </div>
 
             <div class="config__info-block">
-              <h4 class="config__info-subtitle">Scoring & Winning</h4>
+              <h4 class="config__info-subtitle">Scoring &amp; Winning</h4>
               <ul class="config__info-list">
-                <li>Each match is played to the configured points (e.g., 16 or 32)</li>
-                <li>Your individual score accumulates across all rounds</li>
-                <li>The tournament winner is the player with the highest total points</li>
-                <li>Players compete individually, even though matches are played in pairs</li>
+                <li>Each game is played to the configured total (16 or 32 is usual)</li>
+                <li>You score the points your side scored, win or lose</li>
+                <li>Your score accumulates across all rounds</li>
+                <li>The winner is the player with the highest total</li>
               </ul>
             </div>
 
             <div class="config__info-block">
-              <h4 class="config__info-subtitle">Why Play Mexicano Style?</h4>
+              <h4 class="config__info-subtitle">Any Number of Players</h4>
               <ul class="config__info-list">
-                <li><strong>Fair Competition:</strong> Everyone plays against similarly skilled opponents</li>
-                <li><strong>Social:</strong> You meet and play with all participants throughout the tournament</li>
-                <li><strong>No Elimination:</strong> Everyone plays every round, regardless of performance</li>
-                <li><strong>Engaging:</strong> Standings change dynamically, keeping all rounds exciting</li>
-                <li><strong>Flexible:</strong> Works with any number of players (minimum 4 per court)</li>
+                <li><strong>More players than seats:</strong> whoever has played most rests, so games played stay within one of each other</li>
+                <li><strong>Not a multiple of four:</strong> a court plays one against two, and who plays alone rotates</li>
+                <li><strong>Five players:</strong> the one number that never fits, so one always rests</li>
+                <li><strong>Spare courts</strong> simply go unused</li>
               </ul>
             </div>
           </section>
@@ -241,17 +252,61 @@ export default {
             courts: [],
             newCourt: "",
             randomize: false,
+            minPlayers: MIN_PLAYERS,
         };
+    },
+    created() {
+        // Seed the form from the store, which is restored from localStorage at startup.
+        // Edits stay local until Save, so leaving without saving discards them.
+        const saved = store.getConfig();
+        this.players = [...saved.players];
+        this.courts = [...saved.courts];
+        this.randomize = saved.randomize;
+
+        if (saved.pointsPerMatch === 16 || saved.pointsPerMatch === 32) {
+            this.pointsPerMatch = saved.pointsPerMatch;
+        } else if (saved.pointsPerMatch > 0) {
+            this.pointsPerMatch = 0;
+            this.customPoints = saved.pointsPerMatch;
+        }
     },
     computed: {
         showDebugMenu() {
             return config.SHOW_DEBUG_MENU;
         },
-        playingCount() {
-            return Math.min(this.players.length, this.courts.length * 4);
+        isEditing() {
+            return store.state.tournamentCreated;
+        },
+        seating() {
+            return computeSeating(this.players.length, this.courts.length);
         },
         waitingCount() {
-            return Math.max(0, this.players.length - this.courts.length * 4);
+            return this.players.length - this.seating.seated;
+        },
+        tooManyWaiting() {
+            return this.waitingCount > this.seating.seated;
+        },
+        seatingSummary() {
+            const {seated, courtsUsed, trios} = this.seating;
+            if (seated === 0) return null;
+
+            const courtWord = courtsUsed === 1 ? 'court' : 'courts';
+            let summary = `${seated} playing on ${courtsUsed} ${courtWord}`;
+
+            if (this.waitingCount > 0) {
+                summary += `, ${this.waitingCount} resting each round`;
+            }
+            if (trios > 0) {
+                const gameWord = trios === 1 ? 'game' : 'games';
+                summary += ` · ${trios} ${gameWord} with 3 players (1 vs 2)`;
+            }
+
+            const idleCourts = this.courts.length - courtsUsed;
+            if (idleCourts > 0) {
+                summary += ` · ${idleCourts} ${idleCourts === 1 ? 'court' : 'courts'} idle`;
+            }
+
+            return summary + '.';
         },
         validationError() {
             if (this.players.length === 0) {
@@ -260,10 +315,9 @@ export default {
             if (this.courts.length === 0) {
                 return "No courts created. Add at least one court to start.";
             }
-            if (this.players.length < this.courts.length * 4) {
-                const needed = this.courts.length * 4;
-                const missing = needed - this.players.length;
-                return `Not enough players. For ${this.courts.length} court${this.courts.length > 1 ? 's' : ''} you need at least ${needed} players (${missing} more needed).`;
+            if (this.players.length < MIN_PLAYERS) {
+                const missing = MIN_PLAYERS - this.players.length;
+                return `Not enough players. You need at least ${MIN_PLAYERS} for a game (${missing} more needed).`;
             }
             if (this.pointsPerMatch === 0 && (!this.customPoints || this.customPoints < 1)) {
                 return "Enter valid points per match (must be greater than 0).";
@@ -321,34 +375,32 @@ export default {
             if (this.newCourt.trim()) {
                 this.courts.push(this.newCourt.trim());
                 this.newCourt = "";
+                this.$nextTick(() => {
+                    this.$refs.courtInput.focus();
+                });
             }
         },
         removeCourt(index) {
             this.courts.splice(index, 1);
         },
-        createTournament() {
+        backToTournament() {
+            // Local edits were never committed, so this discards them
+            store.goToTournament();
+        },
+        submit() {
             if (!this.canCreate) return;
 
             const finalPoints = this.pointsPerMatch === 0 ? this.customPoints : this.pointsPerMatch;
 
             store.updateConfig({
                 pointsPerMatch: finalPoints,
-                players: [...this.players],
-                courts: [...this.courts],
+                players: this.players.map(p => p.trim()),
+                courts: this.courts.map(c => c.trim()),
                 randomize: this.randomize,
             });
-
-            store.createTournament();
-
-            // Save to localStorage
-            localStorage.setItem('tournament-config', JSON.stringify({
-                pointsPerMatch: finalPoints,
-                players: this.players,
-                courts: this.courts,
-                randomize: this.randomize,
-            }));
-
-            // View change is handled by store.createTournament() above
+            store.persistConfig();
+            store.markConfigDirty();
+            store.goToTournament();
         },
         fillDummyData() {
             this.players = [

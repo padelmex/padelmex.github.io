@@ -1,5 +1,5 @@
-const CACHE_NAME = 'padel-mexicano-v16';
-const VERSION = '20251123182151';
+const CACHE_NAME = 'padel-mexicano-v23';
+const VERSION = '20260913090349';
 
 // Base URLs without version strings
 const baseUrls = [

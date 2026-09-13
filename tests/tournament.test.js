@@ -1,4 +1,4 @@
-import { Tournament } from '../src/tournament.js';
+import { Tournament, computeSeating } from '../src/tournament.js';
 
 /**
  * Simple test runner
@@ -623,19 +623,15 @@ export function runTournamentTests() {
             });
         });
 
-        // All players should have played roughly the same number of games
-        // With 6 players and 6 rounds of 4 players each, that's 24 player-slots
-        // Ideally 24/6 = 4 games per player
-        // Current algorithm prioritizes leaderboard ranking, which can cause imbalance
-        // TODO: Improve fair rotation to ensure ±1 game difference
+        // 6 players, 6 rounds of 4 player-slots = 24 slots, so 4 games each.
+        // Resting by games played should hold the spread to one game.
         const counts = Object.values(gamesPlayed);
         const min = Math.min(...counts);
         const max = Math.max(...counts);
         const maxDifference = max - min;
 
-        // For now, just ensure everyone plays at least once and difference isn't extreme (>4 games)
         runner.assertTrue(min >= 1, `All players should play at least once: ${JSON.stringify(gamesPlayed)}`);
-        runner.assertTrue(maxDifference <= 4, `Max difference should be ≤4 games. Got: ${JSON.stringify(gamesPlayed)}, difference: ${maxDifference}`);
+        runner.assertTrue(maxDifference <= 1, `Max difference should be ≤1 game. Got: ${JSON.stringify(gamesPlayed)}, difference: ${maxDifference}`);
     });
 
     runner.test('Randomization is deterministic with same seed', () => {
@@ -643,7 +639,8 @@ export function runTournamentTests() {
             players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry'],
             courts: ['Court 1', 'Court 2'],
             pointsPerMatch: 16,
-            randomize: true
+            randomize: true,
+            seed: 424242
         };
 
         const tournament1 = new Tournament(config);
@@ -834,16 +831,15 @@ export function runTournamentTests() {
             players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
             courts: ['Court 1'],
             pointsPerMatch: 16,
-            randomize: false,
-            benchingMode: 'round-robin'
+            randomize: false
         });
 
         const benched = tournament.getBenchPlayers(0);
 
-        runner.assertEqual(benched.length, 2, 'Should have 2 benched players');
+        runner.assertEqual(benched.length, 2, 'Should have 2 resting players');
         runner.assertTrue(
-            benched.includes('P1') && benched.includes('P2'),
-            'P1 and P2 should be benched in round 0'
+            benched.includes('P5') && benched.includes('P6'),
+            'With nobody having played yet, the last two entered rest in round 0'
         );
     });
 
@@ -917,7 +913,7 @@ export function runTournamentTests() {
     // CRITICAL BUG TEST: Score sum validation
     // ============================================================================
 
-    runner.test('CRITICAL BUG: updateScore does NOT validate score sum equals pointsPerMatch', () => {
+    runner.test('By design: updateScore does not validate the score sum (the UI warns instead)', () => {
         const tournament = new Tournament({
             players: ['Alice', 'Bob', 'Charlie', 'Dave'],
             courts: ['Court 1'],
@@ -943,7 +939,7 @@ export function runTournamentTests() {
         }
     });
 
-    runner.test('CRITICAL BUG: updateScore allows score sum less than pointsPerMatch', () => {
+    runner.test('By design: updateScore allows a score sum below pointsPerMatch', () => {
         const tournament = new Tournament({
             players: ['Alice', 'Bob', 'Charlie', 'Dave'],
             courts: ['Court 1'],
@@ -967,37 +963,31 @@ export function runTournamentTests() {
     // NEW TESTS: Edge Cases - Insufficient Players
     // ============================================================================
 
-    runner.test('Tournament with 1 player creates no games', () => {
-        const tournament = new Tournament({
-            players: ['Alice'],
-            courts: ['Court 1'],
-            pointsPerMatch: 16,
-            randomize: false
-        });
-
-        runner.assertEqual(
-            tournament.rounds[0].games.length,
-            0,
-            'Should have no games with only 1 player'
+    runner.test('Tournament with 1 player is rejected', () => {
+        runner.assertThrows(
+            () => new Tournament({
+                players: ['Alice'],
+                courts: ['Court 1'],
+                pointsPerMatch: 16,
+                randomize: false
+            }),
+            'One player is not a tournament'
         );
     });
 
-    runner.test('Tournament with 2 players creates no games', () => {
-        const tournament = new Tournament({
-            players: ['Alice', 'Bob'],
-            courts: ['Court 1'],
-            pointsPerMatch: 16,
-            randomize: false
-        });
-
-        runner.assertEqual(
-            tournament.rounds[0].games.length,
-            0,
-            'Should have no games with only 2 players'
+    runner.test('Tournament with 2 players is rejected', () => {
+        runner.assertThrows(
+            () => new Tournament({
+                players: ['Alice', 'Bob'],
+                courts: ['Court 1'],
+                pointsPerMatch: 16,
+                randomize: false
+            }),
+            'Two players cannot fill a court'
         );
     });
 
-    runner.test('Tournament with 3 players creates no games', () => {
+    runner.test('Tournament with 3 players creates one 1 v 2 game', () => {
         const tournament = new Tournament({
             players: ['Alice', 'Bob', 'Charlie'],
             courts: ['Court 1'],
@@ -1005,10 +995,15 @@ export function runTournamentTests() {
             randomize: false
         });
 
+        const games = tournament.rounds[0].games;
+
+        runner.assertEqual(games.length, 1, 'Three players fill one court');
+        runner.assertEqual(games[0].team1.length, 1, 'One player plays alone');
+        runner.assertEqual(games[0].team2.length, 2, 'The other two are partners');
         runner.assertEqual(
-            tournament.rounds[0].games.length,
+            tournament.getBenchPlayers(0).length,
             0,
-            'Should have no games with only 3 players (need 4)'
+            'Nobody rests with exactly three players'
         );
     });
 
@@ -1141,7 +1136,8 @@ export function runTournamentTests() {
             players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry'],
             courts: ['Court 1', 'Court 2'],
             pointsPerMatch: 16,
-            randomize: true  // This should NOT affect round 0
+            randomize: true,  // This should NOT affect round 0
+            seed: 998877
         };
 
         const tournament1 = new Tournament(config);
@@ -1176,64 +1172,53 @@ export function runTournamentTests() {
     // NEW TESTS: SeededRandom Determinism
     // ============================================================================
 
-    runner.test('calculateSeed() produces consistent seed for same config', () => {
-        const config = {
+    runner.test('An explicit seed is kept as given', () => {
+        const tournament = new Tournament({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false,
+            seed: 123456
+        });
+
+        runner.assertEqual(tournament.seed, 123456, 'Seed should be used as provided');
+    });
+
+    runner.test('Seed is drawn at random when not given', () => {
+        const config = () => ({
             players: ['Alice', 'Bob', 'Charlie', 'Dave'],
             courts: ['Court 1'],
             pointsPerMatch: 16,
             randomize: false
-        };
+        });
 
-        const tournament1 = new Tournament(config);
-        const tournament2 = new Tournament(config);
+        const seeds = new Set();
+        for (let i = 0; i < 20; i++) {
+            const tournament = new Tournament(config());
+            runner.assertTrue(
+                Number.isInteger(tournament.seed),
+                'Seed should be an integer'
+            );
+            seeds.add(tournament.seed);
+        }
 
-        runner.assertEqual(
-            tournament1.seed,
-            tournament2.seed,
-            'Same config should produce same seed'
+        runner.assertTrue(
+            seeds.size > 1,
+            'Two tournaments with the same players should not share a seed'
         );
     });
 
-    runner.test('calculateSeed() produces different seed for different players', () => {
-        const tournament1 = new Tournament({
+    runner.test('Seed survives a serialization round trip', () => {
+        const tournament = new Tournament({
             players: ['Alice', 'Bob', 'Charlie', 'Dave'],
             courts: ['Court 1'],
             pointsPerMatch: 16,
-            randomize: false
+            randomize: true
         });
 
-        const tournament2 = new Tournament({
-            players: ['Eve', 'Frank', 'Grace', 'Henry'],
-            courts: ['Court 1'],
-            pointsPerMatch: 16,
-            randomize: false
-        });
+        const restored = Tournament.fromJSON(JSON.parse(JSON.stringify(tournament.toJSON())));
 
-        runner.assertFalse(
-            tournament1.seed === tournament2.seed,
-            'Different players should produce different seed'
-        );
-    });
-
-    runner.test('calculateSeed() produces different seed for different courts', () => {
-        const tournament1 = new Tournament({
-            players: ['Alice', 'Bob', 'Charlie', 'Dave'],
-            courts: ['Court 1'],
-            pointsPerMatch: 16,
-            randomize: false
-        });
-
-        const tournament2 = new Tournament({
-            players: ['Alice', 'Bob', 'Charlie', 'Dave'],
-            courts: ['Court 2'],
-            pointsPerMatch: 16,
-            randomize: false
-        });
-
-        runner.assertFalse(
-            tournament1.seed === tournament2.seed,
-            'Different courts should produce different seed'
-        );
+        runner.assertEqual(restored.seed, tournament.seed, 'Seed should be persisted');
     });
 
     // ============================================================================
@@ -1320,6 +1305,490 @@ export function runTournamentTests() {
             }),
             'Should throw error when randomize is not a boolean'
         );
+    });
+
+
+    // ============================================================================
+    // NEW TESTS: Seating - courts of three and resting
+    // ============================================================================
+
+    runner.test('computeSeating() prefers full courts, then courts of three', () => {
+        const seating = (p, c) => {
+            const s = computeSeating(p, c);
+            return [s.seated, s.courtsUsed, s.quads, s.trios];
+        };
+
+        runner.assertEqual(seating(3, 1), [3, 1, 0, 1], '3 players fill one court of three');
+        runner.assertEqual(seating(4, 1), [4, 1, 1, 0], '4 players fill one court of four');
+        runner.assertEqual(seating(5, 1), [4, 1, 1, 0], '5 never fits, so one rests');
+        runner.assertEqual(seating(5, 2), [4, 1, 1, 0], '5 never fits however many courts');
+        runner.assertEqual(seating(6, 2), [6, 2, 0, 2], '6 on 2 courts is two courts of three');
+        runner.assertEqual(seating(7, 2), [7, 2, 1, 1], '7 on 2 courts is a four and a three');
+        runner.assertEqual(seating(8, 2), [8, 2, 2, 0], '8 on 2 courts is two fours');
+        runner.assertEqual(seating(9, 3), [9, 3, 0, 3], '9 on 3 courts is three courts of three');
+        runner.assertEqual(seating(10, 3), [10, 3, 1, 2], '10 on 3 courts is a four and two threes');
+        runner.assertEqual(seating(11, 3), [11, 3, 2, 1], '11 on 3 courts is two fours and a three');
+        runner.assertEqual(seating(13, 4), [13, 4, 1, 3], '13 on 4 courts is a four and three threes');
+    });
+
+    runner.test('computeSeating() caps at court capacity and rests the remainder', () => {
+        runner.assertEqual(computeSeating(6, 1).seated, 4, '6 players on 1 court: 2 rest');
+        runner.assertEqual(computeSeating(9, 2).seated, 8, '9 players on 2 courts: 1 rests');
+        runner.assertEqual(computeSeating(13, 3).seated, 12, '13 players on 3 courts: 1 rests');
+        runner.assertEqual(computeSeating(17, 4).seated, 16, '17 players on 4 courts: 1 rests');
+    });
+
+    runner.test('computeSeating() returns nothing below three players', () => {
+        runner.assertEqual(computeSeating(2, 5).courtsUsed, 0, 'Two players cannot be seated');
+        runner.assertEqual(computeSeating(5, 0).courtsUsed, 0, 'No courts means no games');
+    });
+
+    runner.test('Spare courts beyond what is needed go unused', () => {
+        const tournament = new Tournament({
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+            courts: ['Court 1', 'Court 2', 'Court 3'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        runner.assertEqual(tournament.rounds[0].games.length, 2, '6 players need only 2 courts');
+        runner.assertEqual(tournament.getBenchPlayers(0).length, 0, 'Nobody rests');
+    });
+
+    runner.test('Seven players on two courts give one doubles game and one 1 v 2', () => {
+        const tournament = new Tournament({
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        const games = tournament.rounds[0].games;
+
+        runner.assertEqual(games.length, 2, 'Both courts are used');
+        runner.assertEqual(games[0].team1.length, 2, 'The top court is a doubles game');
+        runner.assertEqual(games[0].team2.length, 2, 'The top court is a doubles game');
+        runner.assertEqual(games[1].team1.length, 1, 'The court of three comes last');
+        runner.assertEqual(games[1].team2.length, 2, 'The solo player faces two');
+        runner.assertEqual(tournament.getBenchPlayers(0).length, 0, 'Nobody rests');
+    });
+
+    runner.test('Every player on a court of three is distinct and the solo player is team1', () => {
+        const tournament = new Tournament({
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        const seen = new Set();
+        tournament.rounds[0].games.forEach(game => {
+            runner.assertEqual(game.team1.length, 1, 'Solo player is always team1');
+            runner.assertEqual(game.team2.length, 2, 'The pair is always team2');
+            [...game.team1, ...game.team2].forEach(player => seen.add(player));
+        });
+
+        runner.assertEqual(seen.size, 6, 'All six players appear exactly once');
+    });
+
+    // ============================================================================
+    // NEW TESTS: Fairness of the solo role and of resting
+    // ============================================================================
+
+    runner.test('Playing alone is shared out evenly over a session', () => {
+        const tournament = new Tournament({
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        for (let round = 0; round < 6; round++) {
+            tournament.rounds[round].games.forEach((game, gameIndex) => {
+                tournament.updateScore(round, gameIndex, 10, 6);
+            });
+            if (round < 5) {
+                tournament.createNextRound();
+            }
+        }
+
+        const soloCounts = tournament.getSoloCounts();
+        const counts = Object.values(soloCounts);
+        const spread = Math.max(...counts) - Math.min(...counts);
+
+        runner.assertEqual(
+            counts.reduce((sum, n) => sum + n, 0),
+            12,
+            'Six rounds of two courts of three is twelve solo turns'
+        );
+        // Courts are partitioned by ranking, so exact equality is not reachable.
+        // What must hold is that everyone takes turns and nobody carries an excess.
+        const fairMax = Math.ceil(12 / counts.length) + 1;
+        runner.assertTrue(
+            Math.min(...counts) >= 1,
+            `Everyone should take a turn alone. Got: ${JSON.stringify(soloCounts)}`
+        );
+        runner.assertTrue(
+            Math.max(...counts) <= fairMax,
+            `Nobody should carry an excess of solo turns. Got: ${JSON.stringify(soloCounts)}`
+        );
+        runner.assertTrue(spread <= 2, `Solo turns should be close. Got: ${JSON.stringify(soloCounts)}`);
+    });
+
+    runner.test('Resting keeps games played within one across a session', () => {
+        const tournament = new Tournament({
+            players: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        for (let round = 0; round < 8; round++) {
+            tournament.updateScore(round, 0, 9, 7);
+            if (round < 7) {
+                tournament.createNextRound();
+            }
+        }
+
+        const counts = Object.values(tournament.getScheduledGameCounts());
+        const spread = Math.max(...counts) - Math.min(...counts);
+
+        runner.assertTrue(
+            spread <= 1,
+            `Games played should be within one. Got: ${JSON.stringify(tournament.getScheduledGameCounts())}`
+        );
+    });
+
+    runner.test('The court of four rotates so the leaders also play alone', () => {
+        const players = Array.from({length: 13}, (_, i) => 'P' + (i + 1));
+        const tournament = new Tournament({
+            players,
+            courts: ['C1', 'C2', 'C3', 'C4'],
+            pointsPerMatch: 16,
+            randomize: false,
+            seed: 4242
+        });
+
+        for (let round = 0; round < 12; round++) {
+            tournament.rounds[round].games.forEach((game, gameIndex) => {
+                tournament.updateScore(round, gameIndex, 9, 7);
+            });
+            if (round < 11) {
+                tournament.createNextRound();
+            }
+        }
+
+        const soloCounts = tournament.getSoloCounts();
+        const counts = Object.values(soloCounts);
+
+        // 12 rounds of three courts of three is 36 solo turns across 13 players
+        const fairMax = Math.ceil(36 / players.length) + 1;
+
+        runner.assertTrue(
+            Math.min(...counts) >= 1,
+            `Nobody should be exempt from playing alone. Got: ${JSON.stringify(soloCounts)}`
+        );
+        runner.assertTrue(
+            Math.max(...counts) <= fairMax,
+            `Nobody should carry an excess of solo turns. Got: ${JSON.stringify(soloCounts)}`
+        );
+    });
+
+    // ============================================================================
+    // NEW TESTS: Determinism
+    // ============================================================================
+
+    runner.test('Undoing and re-saving a round draws the identical round', () => {
+        const tournament = new Tournament({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: true,
+            seed: 31337
+        });
+
+        for (let round = 0; round < 4; round++) {
+            tournament.rounds[round].games.forEach((game, gameIndex) => {
+                tournament.updateScore(round, gameIndex, 9 + gameIndex, 7 - gameIndex);
+            });
+            tournament.createNextRound();
+        }
+
+        const before = JSON.stringify(tournament.rounds[4].games);
+
+        tournament.undoLastRound();
+        tournament.createNextRound();
+
+        runner.assertEqual(
+            JSON.stringify(tournament.rounds[4].games),
+            before,
+            'The same round should come back unchanged'
+        );
+    });
+
+    runner.test('A restored tournament draws the same next round as the original', () => {
+        const tournament = new Tournament({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivan'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: true
+        });
+
+        for (let round = 0; round < 3; round++) {
+            tournament.rounds[round].games.forEach((game, gameIndex) => {
+                tournament.updateScore(round, gameIndex, 10, 6);
+            });
+            tournament.createNextRound();
+        }
+
+        const restored = Tournament.fromJSON(JSON.parse(JSON.stringify(tournament.toJSON())));
+        restored.undoLastRound();
+        restored.createNextRound();
+
+        runner.assertEqual(
+            JSON.stringify(restored.rounds[3].games),
+            JSON.stringify(tournament.rounds[3].games),
+            'A reload must not change the draw'
+        );
+    });
+
+    // ============================================================================
+    // NEW TESTS: Editing a running tournament
+    // ============================================================================
+
+    runner.test('applyConfig() re-draws the current round while it has no scores', () => {
+        const tournament = new Tournament({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: false,
+            seed: 555
+        });
+
+        const result = tournament.applyConfig({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        runner.assertTrue(result.currentRoundRedrawn, 'The round should be re-drawn');
+        runner.assertEqual(tournament.rounds.length, 1, 'Still one round, not two');
+
+        const playing = new Set();
+        tournament.rounds[0].games.forEach(game => {
+            [...game.team1, ...game.team2].forEach(player => playing.add(player));
+        });
+
+        runner.assertFalse(playing.has('Henry'), 'The removed player is off court');
+        runner.assertEqual(playing.size, 7, 'The remaining seven all play');
+    });
+
+    runner.test('applyConfig() keeps the current round once a score is entered', () => {
+        const tournament = new Tournament({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: false,
+            seed: 555
+        });
+
+        tournament.updateScore(0, 0, 9, 7);
+        const before = JSON.stringify(tournament.rounds[0].games);
+
+        const result = tournament.applyConfig({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        runner.assertFalse(result.currentRoundRedrawn, 'The round should be left alone');
+        runner.assertEqual(
+            JSON.stringify(tournament.rounds[0].games),
+            before,
+            'Games and scores must be untouched'
+        );
+    });
+
+    runner.test('applyConfig() never touches played rounds or the seed', () => {
+        const tournament = new Tournament({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        const seed = tournament.seed;
+        tournament.updateScore(0, 0, 9, 7);
+        tournament.updateScore(0, 1, 10, 6);
+        tournament.createNextRound();
+        const round1 = JSON.stringify(tournament.rounds[0]);
+
+        tournament.applyConfig({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank'],
+            courts: ['Court 1'],
+            pointsPerMatch: 32,
+            randomize: true
+        });
+
+        runner.assertEqual(tournament.seed, seed, 'The seed must never be recomputed');
+        runner.assertEqual(
+            JSON.stringify(tournament.rounds[0]),
+            round1,
+            'The played round must be untouched, points target included'
+        );
+    });
+
+    runner.test('A player added part-way through plays the very next round', () => {
+        const tournament = new Tournament({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        tournament.updateScore(0, 0, 9, 7);
+        tournament.createNextRound();
+        tournament.updateScore(1, 0, 9, 7);
+
+        tournament.applyConfig({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Ivan'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+        tournament.createNextRound();
+
+        const playing = new Set();
+        tournament.rounds[2].games.forEach(game => {
+            [...game.team1, ...game.team2].forEach(player => playing.add(player));
+        });
+
+        runner.assertTrue(playing.has('Ivan'), 'Having played no games, Ivan goes straight on');
+    });
+
+    runner.test('A removed player keeps their points and is marked inactive', () => {
+        const tournament = new Tournament({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        tournament.updateScore(0, 0, 10, 6);
+        const scored = tournament.rounds[0].games[0].team1[0];
+        const remaining = tournament.players.filter(player => player !== scored);
+
+        tournament.applyConfig({
+            players: [...remaining, 'Ivan'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        const leaderboard = tournament.getLeaderboard();
+        const departed = leaderboard.find(entry => entry.name === scored);
+
+        runner.assertTrue(!!departed, 'The departed player stays on the leaderboard');
+        runner.assertEqual(departed.points, 10, 'They keep the points they earned');
+        runner.assertFalse(departed.active, 'They are marked inactive');
+        runner.assertTrue(
+            leaderboard.find(entry => entry.name === 'Ivan').active,
+            'The new arrival is active'
+        );
+    });
+
+    // ============================================================================
+    // NEW TESTS: Points target per round
+    // ============================================================================
+
+    runner.test('Each round records the points target it was drawn with', () => {
+        const tournament = new Tournament({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        tournament.updateScore(0, 0, 9, 7);
+        tournament.applyConfig({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave'],
+            courts: ['Court 1'],
+            pointsPerMatch: 32,
+            randomize: false
+        });
+        tournament.createNextRound();
+
+        runner.assertEqual(tournament.getPointsTarget(0), 16, 'Round 1 keeps its 16');
+        runner.assertEqual(tournament.getPointsTarget(1), 32, 'Round 2 uses the new 32');
+    });
+
+    runner.test('getPointsTarget() falls back for rounds saved without a target', () => {
+        const tournament = new Tournament({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave'],
+            courts: ['Court 1'],
+            pointsPerMatch: 24,
+            randomize: false
+        });
+
+        delete tournament.rounds[0].pointsPerMatch;
+
+        runner.assertEqual(
+            tournament.getPointsTarget(0),
+            24,
+            'Older saved rounds fall back to the tournament setting'
+        );
+    });
+
+    runner.test('A past round remembers who was in the tournament at the time', () => {
+        const tournament = new Tournament({
+            players: ['Ana', 'Bo', 'Cy'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        tournament.updateScore(0, 0, 6, 10);
+
+        runner.assertEqual(
+            tournament.getBenchPlayers(0).length,
+            0,
+            'Nobody rested in round 1'
+        );
+
+        tournament.applyConfig({
+            players: ['Ana', 'Bo', 'Cy', 'Dee', 'Eli'],
+            courts: ['Court 1'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        runner.assertEqual(
+            tournament.getBenchPlayers(0).length,
+            0,
+            'Players who joined later were not resting in round 1'
+        );
+        runner.assertEqual(
+            tournament.rounds[0].players,
+            ['Ana', 'Bo', 'Cy'],
+            'Round 1 keeps the roster it was drawn with'
+        );
+    });
+
+    runner.test('roundHasScores() spots a single entered score', () => {
+        const tournament = new Tournament({
+            players: ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Frank', 'Grace', 'Henry'],
+            courts: ['Court 1', 'Court 2'],
+            pointsPerMatch: 16,
+            randomize: false
+        });
+
+        runner.assertFalse(tournament.roundHasScores(0), 'A fresh round has no scores');
+
+        tournament.rounds[0].games[1].score1 = 0;
+
+        runner.assertTrue(tournament.roundHasScores(0), 'A zero counts as an entered score');
     });
 
 

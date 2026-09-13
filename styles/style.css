@@ -473,8 +473,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Link Styles */
-.link-danger {
-    color: #dc2626;
+.link-action {
+    color: #000;
     text-decoration: none;
     font-weight: 500;
     font-size: 0.9rem;
@@ -483,8 +483,12 @@ h1, h2, h3, h4, h5, h6 {
     transition: border-color 0.2s;
 }
 
-.link-danger:hover {
-    border-bottom-color: #dc2626;
+.link-action:hover {
+    border-bottom-color: currentColor;
+}
+
+.link-danger {
+    color: #dc2626;
 }
 
 /* Tournament Page */
@@ -505,6 +509,14 @@ h1, h2, h3, h4, h5, h6 {
 .tournament-page__header h1 {
     font-size: 2rem;
     font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.tournament-page__actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
 }
 
 /* Rounds Container */
@@ -619,6 +631,14 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 500;
 }
 
+.game__alone {
+    font-size: 0.7rem;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+}
+
 .game__score {
     width: 3.5rem;
     height: 3.5rem;
@@ -703,22 +723,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Leaderboard */
 .leaderboard {
-    background: #fff;
-    border-radius: 8px;
-    border: 2px solid #000;
-    padding: 1.5rem;
-}
-
-.leaderboard__header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.leaderboard__header h2 {
-    font-size: 1.5rem;
-    font-weight: 700;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 .leaderboard__table {
@@ -768,6 +775,11 @@ h1, h2, h3, h4, h5, h6 {
     color: #000;
 }
 
+.leaderboard__row--inactive,
+.leaderboard__row--inactive .leaderboard__points {
+    color: #9ca3af;
+}
+
 /* Mobile optimizations */
 @media (max-width: 450px) {
     .tournament-page__header h1 {
@@ -787,14 +799,6 @@ h1, h2, h3, h4, h5, h6 {
 
     .game__players {
         font-size: 0.85rem;
-    }
-
-    .leaderboard {
-        padding: 1rem;
-    }
-
-    .leaderboard__header h2 {
-        font-size: 1.3rem;
     }
 
     .leaderboard__table th,

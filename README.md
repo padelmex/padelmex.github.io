@@ -8,7 +8,9 @@ A Progressive Web App for organizing and managing Padel Mexicano tournaments. Th
 - **Smart Pairing**: Automatic team pairing based on leaderboard rankings
 - **Score Tracking**: Track scores for each game with real-time updates
 - **Live Leaderboard**: View player standings with points, wins, losses, and games played
-- **Round-Robin Benching**: Fair rotation for players when you have more players than court capacity
+- **Any Number of Players**: Courts of three (1 vs 2) when you are short of a full four, with a fair rotation of who plays alone
+- **Fair Rotation**: When there are more players than court seats, rest rounds are spread so games played stay within one of each other
+- **Editable Mid-Tournament**: Add or remove players and courts without losing a single score
 - **Randomization**: Optional deterministic randomization to prevent repetitive pairings
 - **Offline Support**: Works completely offline after initial load with service worker caching
 - **Mobile-First**: Responsive design optimized for mobile devices
@@ -100,22 +102,32 @@ paddle-mexican/
 ├── lib/                # Vendored libraries (Vue)
 ├── assets/             # Static assets (favicon, icons)
 ├── tests/              # Test files
+├── docs/               # Format rules, behaviour and design decisions
 └── Makefile            # Development commands
 ```
 
 ## How It Works
 
-### Tournament Logic
-
-1. **Setup Phase**: Configure players, courts, and points per match
+1. **Setup**: Configure players, courts, and points per match
 2. **Round Generation**:
-   - First round uses initial player order
-   - Subsequent rounds pair players based on leaderboard rankings
-   - Optional randomization prevents repetitive pairings while maintaining competitive balance
-3. **Benching**: When there are more players than court capacity, players bench in a fixed round-robin rotation to ensure fairness
-4. **Score Tracking**: Enter scores for each game as they complete
+   - First round uses the order players were entered
+   - Later rounds rank everyone by points and fill courts from the top, pairing `1 & 3 vs 2 & 4`
+   - Optional randomization varies partners within a court without disturbing the ladder
+3. **Seating**: Courts of three (1 vs 2) are used whenever that lets everyone play; when
+   there are more players than seats, the players with the most games rest
+4. **Score Tracking**: Enter scores as games finish. A total that doesn't match the target is
+   flagged, not rejected
 5. **Leaderboard**: Players ranked by total points, then games played, then alphabetically
-6. **Next Round**: Once all games complete, advance to the next round with updated pairings
+6. **Next Round**: Once all games have scores, advance with updated pairings
+
+### Documentation
+
+| Document | What's in it |
+|---|---|
+| [docs/mexicano-format.md](docs/mexicano-format.md) | The format: scoring, the ranking ladder, how rounds are drawn |
+| [docs/player-counts.md](docs/player-counts.md) | What happens for any number of players, with full seating tables |
+| [docs/navigation-and-state.md](docs/navigation-and-state.md) | Screens, stored data, editing a running tournament, determinism |
+| [docs/design-decisions.md](docs/design-decisions.md) | Why each rule is the way it is, and what was rejected |
 
 ## Browser Requirements
 

@@ -12,24 +12,32 @@ const app = createApp({
         TournamentPage,
     },
     computed: {
+        currentView() {
+            return store.state.currentView;
+        },
         currentComponent() {
-            if (store.state.currentView === 'tournament') {
+            // The leaderboard is a view of the tournament, rendered by the same component
+            if (store.state.currentView === 'tournament' || store.state.currentView === 'leaderboard') {
                 return 'tournament-page';
             }
             return 'tournament-config';
         }
     },
-    mounted() {
-        document.getElementById("app").classList.add("mounted");
-
-        // Check if there's saved tournament data and set the appropriate view
-        const hasTournamentData = localStorage.getItem('tournament-data') !== null;
-        if (hasTournamentData) {
-            store.setView('tournament');
-        } else {
-            store.setView('setup');
+    watch: {
+        // Each screen starts at the top; landing mid-page after a view change is
+        // disorienting, especially on the long setup screen.
+        currentView() {
+            window.scrollTo(0, 0);
         }
     },
+    mounted() {
+        document.getElementById("app").classList.add("mounted");
+    },
 });
+
+// Restore the setup form and seed the history stack before mounting: a child's
+// created() hook runs before the root's mounted(), so this cannot wait until then.
+store.loadConfig();
+store.initNavigation();
 
 app.mount('#app')

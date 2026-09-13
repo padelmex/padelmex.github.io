@@ -142,7 +142,7 @@ export default {
                 class="config__checkbox"
               >
               <span class="config__checkbox-text">
-                Mix up pairings to make games less predictable
+                Swap partners within each court between rounds
                 <small>(Recommended)</small>
               </span>
             </label>

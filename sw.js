@@ -1,5 +1,5 @@
-const CACHE_NAME = 'padel-mexicano-v26';
-const VERSION = '20260913093422';
+const CACHE_NAME = 'padel-mexicano-v28';
+const VERSION = '20260913094736';
 
 // Base URLs without version strings
 const baseUrls = [
@@ -9,11 +9,13 @@ const baseUrls = [
   './styles/style.css',
   './src/app.js',
   './src/config.js',
+  './src/environment.js',
   './src/store.js',
   './src/tournament.js',
   './lib/vue.esm-browser.prod.js',
   './src/components/tournament_page.js',
   './src/components/tournament_config.js',
+  './src/components/storage_warning.js',
   './assets/favicon.png',
   './assets/icon-192.png',
   './assets/icon-512.png'

@@ -1,15 +1,18 @@
 import {createApp} from "vue";
 import TournamentConfig from "./components/tournament_config.js";
 import TournamentPage from "./components/tournament_page.js";
+import StorageWarning from "./components/storage_warning.js";
 import {store} from "./store.js";
 
 const app = createApp({
     template: `
+      <StorageWarning />
       <component :is="currentComponent"></component>
     `,
     components: {
         TournamentConfig,
         TournamentPage,
+        StorageWarning,
     },
     computed: {
         currentView() {
